@@ -1,0 +1,67 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="./bundle.js"></script>
+  <script src="./data.js"></script>
+  <title>Document</title>
+</head>
+<body>
+  <div id="kg" style="width:700px; height: 600px; background: #373e41;"></div>
+  
+  <script>
+    const target = document.getElementById('kg')
+    
+    const {nodes, links} = data
+    const method1 = () => console.log('外部事件1：点击了画布上的某点')
+    const method2 = n =>  console.log('外部事件2：点击了节点->' + n.name)
+    const method3 = n =>  {
+      console.log('外部事件3：点击了节点->')
+      console.log(n)
+    }
+
+
+    const menu = {
+      'web': [
+        { 
+          name: '互联网大厂', type: 'company', children: [
+            {name: '百度', type: 'baidu'},
+            {name: '腾讯', type: 'tecent'},
+            {name: '美团', type: 'meituan'},
+            {name: '阿里', type: 'ali'},
+          ]
+        },
+        { 
+          name: '互联网技术路线', 
+          type: 'tech', 
+          children: [
+            {name: '前端', type: 'front', event: {type: 'add', source: addNodes} },
+            {name: '后端', type: 'back'}
+          ] 
+        },
+      ],
+      'front': [ {name: 'JS', type: 'js'}, {name: 'HTML', type: 'html'}, {name: 'CSS', type: 'css'}],
+      'back': [ {name: '数据库', type: 'db'}, {name: '开发', type: 'dev'}, {name: '服务器', type: 'server'}]
+    }
+
+    kg.init(target)
+    kg.setOption({
+      nodes,
+      links,
+      menu,
+      events: {
+        canvas: [
+          {type: 'click', method: method1}
+        ],
+        node: [
+          {type: 'click', method: method2},
+          {type: 'click', method: method3},
+        ]
+      },
+      dragLock: false
+    })
+
+
+  </script>
+</body>
+</html>

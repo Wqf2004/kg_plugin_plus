@@ -1,0 +1,3336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>知识图谱科普 - 响亮书友会</title>
+    <script src="{{ url_for('static', filename='src/bundle.js') }}"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Microsoft YaHei', sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-attachment: fixed;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.95;
+            color: rgba(255,255,255,0.9);
+            letter-spacing: 1px;
+            font-weight: 300;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: white;
+            text-decoration: none;
+            padding: 10px 24px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 24px;
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .back-link:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateX(-3px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 20px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .knowledge-graph-section {
+            display: block;
+        }
+
+        .knowledge-graph-container {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+            position: relative;
+        }
+
+        .kg-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .kg-toolbar input {
+            flex: 1;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1rem;
+            min-width: 200px;
+        }
+
+        .kg-toolbar input:focus {
+            outline: none;
+            border-color: #6B5B95;
+        }
+
+        .kg-toolbar button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            font-size: 0.9rem;
+        }
+
+        .kg-toolbar button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(139, 126, 116, 0.4);
+        }
+
+        .kg-toolbar button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .kg-toolbar button.secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .kg-toolbar button.secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .kg-toolbar button.active {
+            background: #f5576c !important;
+            color: white !important;
+        }
+
+        .kg-toolbar button.mode-active {
+            background: #6B5B95 !important;
+            color: white !important;
+        }
+
+        .kg-toolbar .separator {
+            width: 1px;
+            height: 28px;
+            background: #d0d0d0;
+            margin: 0 4px;
+        }
+
+        #kg {
+            width: 100%;
+            height: 500px;
+            background: #373e41;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        #kg.is-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            border-radius: 0;
+            z-index: 9999;
+        }
+
+        .fullscreen-exit-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 10001;
+            background: rgba(0,0,0,0.6);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            padding: 8px 18px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: none;
+            backdrop-filter: blur(4px);
+        }
+
+        .fullscreen-exit-btn:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        .kg-info-panel {
+            margin-top: 15px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .kg-info-panel h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+
+        .kg-info-panel p {
+            color: #666;
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        /* ====== Sidebar ====== */
+        .kg-sidebar {
+            position: fixed;
+            right: 20px;
+            top: 180px;
+            width: 320px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-height: 80vh;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+
+        .kg-sidebar.hidden {
+            transform: translateX(360px);
+        }
+
+        .kg-sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .kg-sidebar-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .kg-sidebar-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .kg-sidebar-close:hover {
+            color: #333;
+        }
+
+        .kg-sidebar-section {
+            margin-bottom: 15px;
+        }
+
+        .kg-sidebar-label {
+            font-size: 0.9rem;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .bold {
+            color: black;
+            font-weight: bold;
+        }
+
+        .kg-sidebar-value {
+            font-size: 1rem;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .red {
+            color: rgb(240, 87, 108) !important;
+        }
+
+        .kg-sidebar-highlight {
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+
+        .kg-sidebar-tag {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            margin-right: 5px;
+            margin-bottom: 5px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .kg-sidebar-tag:hover {
+            background: #bbdefb;
+        }
+
+        /* ====== Modal Overlay ====== */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 5000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-box {
+            background: #fff;
+            border-radius: 14px;
+            width: 540px;
+            max-width: 94vw;
+            max-height: 88vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            animation: modalIn 0.25s ease;
+        }
+
+        @keyframes modalIn {
+            from { transform: translateY(30px); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            font-size: 1.15rem;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.4rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover { color: #333; }
+
+        .modal-body {
+            padding: 22px;
+        }
+
+        .edit-dynamic-block {
+            max-height: 220px;
+            overflow-y: auto;
+            border: 1px solid #e8e8e8;
+            border-radius: 8px;
+            padding: 10px 12px;
+            background: #fafafa;
+        }
+
+        .modal-footer {
+            padding: 14px 22px;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .modal-footer button {
+            padding: 9px 22px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+
+        .btn-primary:hover { opacity: 0.9; }
+
+        .btn-cancel {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .btn-cancel:hover { background: #e0e0e0; }
+
+        /* ====== Form Fields ====== */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 0.9rem;
+            color: #555;
+            margin-bottom: 6px;
+            font-weight: 600;
+        }
+
+        .form-group input[type="text"],
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid #ddd;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        /* ====== Cover Image Grid ====== */
+        .cover-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+
+        .cover-item {
+            position: relative;
+            border: 3px solid transparent;
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.15s;
+            aspect-ratio: 1;
+        }
+
+        .cover-item:hover {
+            transform: scale(1.05);
+        }
+
+        .cover-item.selected {
+            border-color: #764ba2;
+            box-shadow: 0 0 0 2px rgba(118,75,162,0.3);
+        }
+
+        .cover-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .cover-item .cover-check {
+            position: absolute;
+            top: 4px; right: 4px;
+            width: 22px; height: 22px;
+            background: #764ba2;
+            color: #fff;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .cover-item.selected .cover-check {
+            display: flex;
+        }
+
+        /* Upload area */
+        .cover-upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            margin-top: 8px;
+        }
+
+        .cover-upload-area:hover {
+            border-color: #764ba2;
+            background: #f5f0ff;
+        }
+
+        .cover-upload-area input[type="file"] {
+            display: none;
+        }
+
+        .cover-upload-area .upload-icon {
+            font-size: 1.6rem;
+            color: #999;
+        }
+
+        .cover-upload-area .upload-text {
+            font-size: 0.85rem;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .cover-upload-preview {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .cover-upload-preview img {
+            max-width: 120px;
+            max-height: 120px;
+            border-radius: 8px;
+            border: 2px solid #764ba2;
+        }
+
+        /* ====== Tag Manager ====== */
+        .tag-manager-section {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #eee;
+        }
+
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0;
+        }
+
+        .tag-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            cursor: default;
+            transition: opacity 0.2s;
+        }
+
+        .tag-chip .tag-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+
+        .tag-chip .tag-remove {
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-left: 2px;
+        }
+
+        .tag-chip .tag-remove:hover {
+            opacity: 1;
+        }
+
+        .tag-input-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .tag-input-row input {
+            flex: 1;
+            padding: 7px 10px;
+            border: 1.5px solid #ddd;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .tag-input-row input:focus {
+            outline: none;
+            border-color: #764ba2;
+        }
+
+        .tag-input-row button {
+            padding: 7px 14px;
+            border: none;
+            border-radius: 6px;
+            background: #764ba2;
+            color: #fff;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .tag-input-row button:hover {
+            opacity: 0.9;
+        }
+
+        .tag-config-panel {
+            background: #f8f7fc;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 10px;
+        }
+
+        .tag-config-panel .form-group {
+            margin-bottom: 12px;
+        }
+
+        .tag-config-panel .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        /* ====== Import hidden input ====== */
+        #importFileInput {
+            display: none;
+        }
+
+        /* ====== Range slider ====== */
+        input[type="range"] {
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #764ba2;
+            cursor: pointer;
+        }
+
+        .range-value {
+            display: inline-block;
+            min-width: 32px;
+            text-align: center;
+            font-weight: 600;
+            color: #764ba2;
+        }
+
+        .range-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .range-row input[type="range"] {
+            flex: 1;
+        }
+
+        /* 下拉菜单样式 */
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .dropdown-arrow {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .dropdown.open .dropdown-arrow {
+            transform: rotate(180deg);
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 4px;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            min-width: 180px;
+            z-index: 1000;
+            display: none;
+            overflow: hidden;
+        }
+
+        .dropdown.open .dropdown-menu {
+            display: block;
+        }
+
+        .dropdown-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            color: #333;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f5f5f5;
+        }
+
+        /* 提示消息样式 */
+        .export-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: fadeInOut 3s ease-in-out;
+        }
+
+        .export-toast.loading {
+            background: #2196F3;
+        }
+
+        .export-toast.success {
+            background: #4CAF50;
+        }
+
+        .export-toast.error {
+            background: #F44336;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+            10% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            90% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-10px); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/" class="back-link">← 返回首页</a>
+            <h1> 🗺️知识图谱实践运用 </h1>
+        </div>
+
+        <!-- 成语知识图谱 -->
+        <div class="knowledge-graph-section">
+            <div class="knowledge-graph-container" id="kgContainer">
+                <h2 class="card-title">🕸️ 通用知识图谱编辑</h2>
+
+                <div class="kg-toolbar">
+                    <input type="text" id="idiomName" placeholder="输入节点名">
+                    <button onclick="addIdiomNode()">添加/搜索</button>
+                    <button class="secondary mode-active" id="modeBtn" onclick="toggleMode()">查看</button>
+                    <div class="separator"></div>
+                    <button class="secondary" onclick="openTagManager()">标签管理</button>
+                    <div class="separator"></div>
+                    <button class="secondary" onclick="clearKnowledgeGraph()">清空图谱</button>
+                    <button class="secondary" onclick="saveKnowledgeGraph()">暂存图谱</button>
+                    <!-- <button class="secondary" onclick="exportKnowledgeGraph()">导出图谱</button> -->
+                    <div class="dropdown">
+                        <button class="secondary dropdown-btn" onclick="toggleDropdown()">
+                            导出图谱 <span class="dropdown-arrow">▼</span>
+                        </button>
+                        <div class="dropdown-menu" id="exportDropdown">
+                            <div class="dropdown-item" onclick="exportKnowledgeGraph()">
+                                📄 导出图谱（JSON）
+                            </div>
+                            <div class="dropdown-item" onclick="exportKnowledgeGraphAsImage()">
+                                🖼️ 导出图谱为图像
+                            </div>
+                        </div>
+                    </div>
+                    <button class="secondary" onclick="document.getElementById('importFileInput').click()">导入图谱</button>
+                    <input type="file" id="importFileInput" accept=".json,.csv" onchange="importKnowledgeGraph(event)">
+                    <div class="separator"></div>
+                    <button type="button" class="secondary" title="归约态下进入全屏后将自动逐级展开图谱" onclick="toggleFullscreen()">全屏查看</button>
+                    <!-- Reduce/Expand controls -->
+                    <div class="separator"></div>
+                    <button class="secondary mode-active" id="toggleExpandBtn" onclick="toggleExpand()">全部归约</button>
+                </div>
+
+                <div id="kg"></div>
+                <button class="fullscreen-exit-btn" id="fullscreenExitBtn" onclick="toggleFullscreen()">退出全屏</button>
+
+                <div class="kg-info-panel" id="kgInfoPanel" style="display: none;">
+                    <h3>当前选中</h3>
+                    <p id="selectedNodesInfo">节点: 无</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="kg-sidebar hidden" id="kgSidebar">
+            <div class="kg-sidebar-header">
+                <span class="kg-sidebar-title" id="sidebarTitle">节点详情</span>
+                <button class="kg-sidebar-close" onclick="closeSidebar()">×</button>
+            </div>
+            <div id="sidebarContent"></div>
+        </div>
+    </div>
+
+    <!-- ========== 编辑节点弹窗 ========== -->
+    <div class="modal-overlay" id="editNodeModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="editModalTitle">编辑节点</h3>
+                <button class="modal-close" onclick="closeEditNodeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>节点名称</label>
+                    <input type="text" id="editNodeName" placeholder="在图谱上显示的名称">
+                </div>
+                <!-- Cover Image Section -->
+                <div class="form-group">
+                    <label>封面图像</label>
+                    <div class="cover-grid" id="coverGrid"></div>
+                    <div class="cover-upload-area" id="coverUploadArea" onclick="document.getElementById('coverFileInput').click()">
+                        <input type="file" id="coverFileInput" accept="image/*" onchange="handleCoverUpload(event)">
+                        <div class="upload-icon">📎</div>
+                        <div class="upload-text">点击上传图片到浏览器</div>
+                    </div>
+                    <div class="cover-upload-preview" id="coverUploadPreview" style="display:none;">
+                        <img id="coverUploadPreviewImg" src="" alt="预览">
+                    </div>
+                </div>
+
+                <!-- Radius Section -->
+                <div class="form-group">
+                    <label>节点半径</label>
+                    <div class="range-row">
+                        <input type="range" id="editRadius" min="10" max="80" value="30" oninput="document.getElementById('editRadiusVal').textContent=this.value">
+                        <span class="range-value" id="editRadiusVal">30</span>
+                    </div>
+                </div>
+
+                <!-- Tags -->
+                <div class="form-group">
+                    <label>标签（用逗号分隔）</label>
+                    <input type="text" id="editTags" placeholder="如: 人物,事件,颜色">
+                </div>
+
+                <div class="form-group">
+                    <label>相邻节点名称</label>
+                    <div id="editNeighborsBlock" class="edit-dynamic-block"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeEditNodeModal()">取消</button>
+                <button class="btn-primary" onclick="saveEditNode()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 编辑关联弹窗 ========== -->
+    <div class="modal-overlay" id="editLinkModal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="editLinkModalTitle">编辑关联</h3>
+                <button class="modal-close" onclick="closeEditLinkModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>关联类型</label>
+                    <input type="text" id="editLinkType" placeholder="关联类型/说明">
+                </div>
+                <div class="form-group">
+                    <label>属性</label>
+                    <div id="editLinkPropertiesBlock" class="edit-dynamic-block"></div>
+                    <button type="button" onclick="addLinkProperty()" style="margin-top:8px;padding:6px 12px;border:1px solid #ddd;border-radius:4px;background:#f9f9f9;cursor:pointer;">➕ 添加属性</button>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeEditLinkModal()">取消</button>
+                <button class="btn-primary" onclick="saveEditLink()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== 标签管理弹窗 ========== -->
+    <div class="modal-overlay" id="tagManagerModal">
+        <div class="modal-box" style="width:600px;">
+            <div class="modal-header">
+                <h3>标签管理</h3>
+                <button class="modal-close" onclick="closeTagManager()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>已有标签</label>
+                    <div class="tag-list" id="tagList"></div>
+                </div>
+                <div class="tag-input-row">
+                    <input type="text" id="newTagName" placeholder="新标签名">
+                    <button onclick="addNewTag()">添加标签</button>
+                </div>
+                <div id="tagConfigArea"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeTagManager()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== State ====================
+        let kgData = { nodes: [], links: [] };
+
+        // ==================== Multi-link Detection ====================
+        /**
+         * 检测当前图谱中是否存在两个节点之间有多条连接（多边）
+         * @returns {boolean} 如果存在多连接返回 true，否则返回 false
+         */
+        function hasMultiLinksBetweenNodes() {
+            const linkCountMap = new Map();
+            
+            for (const link of kgData.links) {
+                const sourceId = typeof link.source === 'object' && link.source !== null ? link.source.id : link.source;
+                const targetId = typeof link.target === 'object' && link.target !== null ? link.target.id : link.target;
+                
+                // 创建节点对的唯一标识（无向边，所以用排序后的 id 组合）
+                const pairKey = sourceId < targetId ? `${sourceId}-${targetId}` : `${targetId}-${sourceId}`;
+                
+                const count = linkCountMap.get(pairKey) || 0;
+                linkCountMap.set(pairKey, count + 1);
+                
+                if (count >= 1) {
+                    return true; // 发现多连接
+                }
+            }
+            return false;
+        }
+
+        /**
+         * 安全执行页面刷新：仅在存在多连接时执行 reload
+         * @param {string} reason - 刷新原因，用于日志记录
+         */
+        function safeReload(reason) {
+            if (hasMultiLinksBetweenNodes()) {
+                console.log(`刷新页面：（${reason}）`);
+                window.location.reload();
+            }
+        }
+        let selectedNodes = [];
+        let selectedLinks = [];
+        // 相邻节点/边（节点包括自身，边包括从当前节点出入的边）
+        let neighborNodes = [];
+        let neighborLinks = [];
+        let kgInitialized = false;
+        let currentMode = 'edit';
+        let linkModeNodes = [];
+        let isFullscreen = false;
+        let fullscreenGradualTimer = null;
+        const FULLSCREEN_GRADUAL_STEP_MS = 620;
+
+        // Tags registry: { tagName: { color, radius } }
+        let tagsConfig = {};
+
+        // ==================== Hierarchy Tag System ====================
+        // Ordered hierarchy levels; case-insensitive matching (first/First both match).
+        const HIERARCHY_TAGS = ['first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+
+        /**
+         * Get the hierarchy tag on a node (case-insensitive).
+         * Returns the actual tag string as stored on the node, or null if none.
+         */
+        function getHierarchyTag(node) {
+            if (!node || !node.tags || !Array.isArray(node.tags)) return null;
+            for (const tag of node.tags) {
+                if (HIERARCHY_TAGS.includes(tag.toLowerCase())) return tag;
+            }
+            return null;
+        }
+        
+        /**
+         * Get the next hierarchy tag after the given one.
+         * E.g. 'first' → 'second', 'second' → 'third'.
+         * Returns null if at the end of the hierarchy.
+         */
+        function getNextHierarchyTag(tag) {
+            const idx = HIERARCHY_TAGS.indexOf(tag.toLowerCase());
+            if (idx === -1 || idx >= HIERARCHY_TAGS.length - 1) return null;
+            // Preserve original casing style: if input was capitalized (First), output is capitalized (Second)
+            const next = HIERARCHY_TAGS[idx + 1];
+            if (tag[0] === tag[0].toUpperCase() && tag[0] !== tag[0].toLowerCase()) {
+                return next.charAt(0).toUpperCase() + next.slice(1);
+            }
+            return next;
+        }
+
+        /**
+         * Propagate hierarchy tags through the graph based on outgoing links.
+         * Rule: If node A has a hierarchy tag (e.g. "first"), then every node
+         * that A points to (A → B via an outgoing link) gets the next tag
+         * (e.g. "second"), unless it already has a hierarchy tag at an equal
+         * or higher level.
+         *
+         * This is applied iteratively until no new tags are assigned.
+         */
+        function propagateHierarchyTags() {
+            let changed = true;
+            let iterations = 0;
+            while (changed && iterations < 20) {
+                changed = false;
+                iterations++;
+                for (const link of kgData.links) {
+                    const sourceId = typeof link.source === 'object' && link.source !== null ? link.source.id : link.source;
+                    const targetId = typeof link.target === 'object' && link.target !== null ? link.target.id : link.target;
+                    const sourceNode = kgData.nodes.find(n => n.id === sourceId);
+                    const targetNode = kgData.nodes.find(n => n.id === targetId);
+                    if (!sourceNode || !targetNode) continue;
+
+                    const sourceTag = getHierarchyTag(sourceNode);
+                    if (!sourceTag) continue;
+
+                    const nextTag = getNextHierarchyTag(sourceTag);
+                    if (!nextTag) continue;
+
+                    // Check if target already has this tag or a higher-level tag
+                    const existingTag = getHierarchyTag(targetNode);
+                    if (existingTag) {
+                        const existingIdx = HIERARCHY_TAGS.indexOf(existingTag.toLowerCase());
+                        const nextIdx = HIERARCHY_TAGS.indexOf(nextTag.toLowerCase());
+                        if (existingIdx <= nextIdx) continue; // already has equal or higher tag
+                    }
+
+                    // Assign the next hierarchy tag
+                    if (!targetNode.tags) targetNode.tags = [];
+                    // Remove any existing hierarchy tag first
+                    targetNode.tags = targetNode.tags.filter(t => !HIERARCHY_TAGS.includes(t.toLowerCase()));
+                    targetNode.tags.push(nextTag);
+                    changed = true;
+                }
+            }
+        }
+
+        /**
+         * Assign a hierarchy tag to a node and propagate through the graph.
+         * Returns true if a tag was assigned, false otherwise.
+         */
+        function assignHierarchyTag(node, tag) {
+            if (!node.tags) node.tags = [];
+            // Remove any existing hierarchy tag
+            node.tags = node.tags.filter(t => !HIERARCHY_TAGS.includes(t.toLowerCase()));
+            node.tags.push(tag);
+            propagateHierarchyTags();
+            // Auto-configure tagsConfig for new hierarchy tags
+            ensureHierarchyTagsConfig();
+        }
+
+        /**
+         * Ensure tagsConfig has entries for all hierarchy tags currently in use.
+         * Assigns a default color scheme: first=green, second=blue, third=orange, etc.
+         */
+        function ensureHierarchyTagsConfig() {
+            const HIERARCHY_COLORS = ['#3fb950', '#58a6ff', '#f0883e', '#bc8cff', '#e3b341', '#39c3cf', '#f85149', '#a5d6ff', '#7ee787', '#ff7b72'];
+            const usedTags = new Set();
+            kgData.nodes.forEach(n => {
+                const hTag = getHierarchyTag(n);
+                if (hTag) usedTags.add(hTag.toLowerCase());
+            });
+            usedTags.forEach(tag => {
+                if (!tagsConfig[tag]) {
+                    const idx = HIERARCHY_TAGS.indexOf(tag);
+                    tagsConfig[tag] = {
+                        color: HIERARCHY_COLORS[idx] || '#97a5b3',
+                        radius: 30
+                    };
+                }
+            });
+        }
+
+        const BAR_COLORS = [
+            '#3fb950','#58a6ff','#f0883e','#bc8cff','#e3b341','#39c3cf',
+            '#f85149','#a5d6ff','#7ee787','#ff7b72','#d2a8ff','#79c0ff',
+            '#ffa657','#ffdf5d','#a5f3fc','#97a5b3'
+        ];
+
+        // Preset cover images
+        const PRESET_COVERS = [
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/home.svg', name: '房子' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/settings.svg', name: '设置' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/star.svg', name: '星星' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/heart.svg', name: '爱心' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/book.svg', name: '书籍' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/brain.svg', name: '大脑' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/mail.svg', name: '邮件' },
+            { url: 'https://cdn.jsdelivr.net/npm/lucide-static@0.294.0/icons/bell.svg', name: '铃铛' },
+            { url: 'https://img.icons8.com/clouds/200/book.png', name: '书籍' },
+            { url: 'https://img.icons8.com/clouds/200/brain.png', name: '大脑' },
+            { url: 'https://img.icons8.com/clouds/200/literature.png', name: '文学' },
+            { url: 'https://img.icons8.com/clouds/200/clock.png', name: '时钟'}
+        ];
+
+        // Currently editing state
+        let editTargetNode = null;
+        let editSelectedCover = '';
+        let editUploadedCover = '';
+
+        let isReduced = false;
+
+        // ==================== Upload API Interface ====================
+        /**
+         * 图片上传接口 - 上传图片到服务器/数据库
+         * 当前实现：将图片转为 base64 存入 localStorage
+         * 如需对接真实后端，替换此函数体即可，函数签名保持不变：
+         *   参数: file (File 对象)
+         *   返回: Promise<string> - 图片的访问 URL
+         */
+        async function uploadImageToServer(file) {
+            return new Promise((resolve, reject) => {
+                // ========== 新增：图片大小校验 ==========
+                const MAX_SIZE = 500 * 1024; // 500KB 阈值
+                const fileSizeKB = (file.size / 1024).toFixed(1);
+
+                if (file.size > MAX_SIZE) {
+                    const isContinue = confirm(
+                        `⚠️ 图片大小超限提醒\n` +
+                        `当前图片大小：${fileSizeKB} KB\n` +
+                        `超过 500KB 的图片可能无法保存到浏览器本地存储，\n` +
+                        `刷新页面后可能会丢失封面，是否继续上传？`
+                    );
+                    if (!isContinue) {
+                        reject(new Error('用户取消上传'));
+                        return;
+                    }
+                }
+                // ========== 大小校验结束 ==========
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const base64 = e.target.result;
+                    // 存入 localStorage（模拟服务器存储）
+                    try {
+                        const imageStore = JSON.parse(localStorage.getItem('kg_image_store') || '{}');
+                        const imageId = 'img_' + Date.now();
+                        imageStore[imageId] = base64;
+                        localStorage.setItem('kg_image_store', JSON.stringify(imageStore));
+                        resolve(base64); // 返回 base64 作为 URL
+                    } catch (err) {
+                        alert('⚠️ 本地存储已满，图片无法永久保存，刷新页面后会丢失');
+                        resolve(base64);
+                    }
+                };
+                reader.onerror = () => reject(new Error('图片读取失败'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        /**
+         * 当前实现：从 localStorage 读取
+         */
+        function getUploadedImages() {
+            try {
+                const imageStore = JSON.parse(localStorage.getItem('kg_image_store') || '{}');
+                return Object.entries(imageStore).map(([id, url]) => ({ id, url }));
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // ==================== Persist ====================
+        function persistKgData() {
+            try {
+                if (typeof kgData === 'undefined' || !Array.isArray(kgData.nodes)) return;
+                const nodes = kgData.nodes.map(n => ({
+                    id: n.id,
+                    type: n.type,
+                    name: n.name,
+                    color: n.color,
+                    r: n.r,
+                    cover: n.cover || '',
+                    tags: n.tags || [],
+                    properties: n.properties || {}
+                }));
+                const links = (kgData.links || []).map(l => ({
+                    id: l.id,
+                    source: (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source,
+                    target: (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target,
+                    type: l.type || 'RELATES_TO',
+                    properties: l.properties || {}
+                }));
+                localStorage.setItem('idiomKnowledgeGraph', JSON.stringify({ nodes, links }));
+                localStorage.setItem('kg_tags_config', JSON.stringify(tagsConfig));
+            } catch (e) { console.error('persistKgData failed', e) }
+        }
+
+        // ==================== Boundary Clamping ====================
+        // Wrap kg.setOption to clamp node positions within the SVG viewport,
+        // preventing nodes from being dragged outside the visible area.
+        let _originalSetOption = null;
+
+        function getSvgBounds() {
+            const kgEl = document.getElementById('kg');
+            // Always read the live container size (works for fullscreen & resize)
+            const liveW = kgEl ? kgEl.clientWidth : 800;
+            const liveH = kgEl ? kgEl.clientHeight : 500;
+            const svgEl = kgEl ? kgEl.querySelector('svg') : null;
+            if (svgEl) {
+                const attrW = parseInt(svgEl.getAttribute('width')) || 0;
+                const attrH = parseInt(svgEl.getAttribute('height')) || 0;
+                // Use the larger of SVG attribute or live container (handles stale attrs)
+                return { w: Math.max(attrW, liveW), h: Math.max(attrH, liveH) };
+            }
+            return { w: liveW, h: liveH };
+        }
+
+        /**
+         * Reset SVG dimensions to match the current container size
+         * and re-clamp all nodes into the new boundary.
+         * Call this on fullscreen change, window resize, etc.
+         */
+        function resetSvgBounds() {
+            const kgEl = document.getElementById('kg');
+            if (!kgEl) return;
+            const svgEl = kgEl.querySelector('svg');
+            if (!svgEl) return;
+
+            const newW = kgEl.clientWidth;
+            const newH = kgEl.clientHeight;
+
+            // Update SVG attributes so the rendering area matches the container
+            svgEl.setAttribute('width', newW);
+            svgEl.setAttribute('height', newH);
+
+            // Re-center the force simulation target
+            // (update forceX/forceY center via the simulation's internal force)
+            try {
+                if (typeof kg !== 'undefined' && kg._simulation) {
+                    kg._simulation
+                        .force('x', d3.forceX(newW / 2).strength(0.05))
+                        .force('y', d3.forceY(newH / 2).strength(0.05));
+                }
+            } catch (e) { /* d3 not directly accessible, that's ok */ }
+
+            // 归约态下核内节点/链接与 kgData 条数不一致，用 kgData 整表 setOption 会冲掉 _reducedChildren，
+            // 全屏/缩放时只能改画布尺寸与力导向中心，不能整表重载。
+            if (typeof isReduced !== 'undefined' && isReduced) {
+                return;
+            }
+
+            // Clamp nodes to new bounds and refresh
+            if (kgData.nodes.length > 0) {
+                const margin = 10;
+                kgData.nodes.forEach(n => {
+                    const r = n.r || 20;
+                    const minX = r + margin, maxX = newW - r - margin;
+                    const minY = r + margin, maxY = newH - r - margin;
+                    if (n.fx !== null && n.fx !== undefined) n.fx = Math.max(minX, Math.min(maxX, n.fx));
+                    if (n.fy !== null && n.fy !== undefined) n.fy = Math.max(minY, Math.min(maxY, n.fy));
+                    if (n.x !== undefined) n.x = Math.max(minX, Math.min(maxX, n.x));
+                    if (n.y !== undefined) n.y = Math.max(minY, Math.min(maxY, n.y));
+                });
+                _originalSetOption({ nodes: kgData.nodes, links: kgData.links });
+            }
+        }
+
+        function clampNodesToBounds(nodes) {
+            const { w, h } = getSvgBounds();
+            const margin = 10; // keep a small margin so nodes don't touch the very edge
+            nodes.forEach(n => {
+                const r = n.r || 20;
+                // Clamp the node's intended position (fx/fy override x/y if set)
+                if (n.fx !== null && n.fx !== undefined) {
+                    n.fx = Math.max(r + margin, Math.min(w - r - margin, n.fx));
+                }
+                if (n.fy !== null && n.fy !== undefined) {
+                    n.fy = Math.max(r + margin, Math.min(h - r - margin, n.fy));
+                }
+                // Also clamp x/y (used when fx/fy are null, e.g. after drag release in non-lock mode)
+                if (n.x !== undefined && n.x !== null) {
+                    n.x = Math.max(r + margin, Math.min(w - r - margin, n.x));
+                }
+                if (n.y !== undefined && n.y !== null) {
+                    n.y = Math.max(r + margin, Math.min(h - r - margin, n.y));
+                }
+            });
+        }
+
+        function safeSetOption(opts) {
+            if (opts.nodes) {
+                clampNodesToBounds(opts.nodes);
+            }
+            return _originalSetOption.call(kg, opts);
+        }
+
+        // ==================== Node Actions ====================
+        const delPromise = function (node) {
+            const toDelete = node ? [node] : selectedNodes.slice();
+            toDelete.forEach(n => {
+                const nodeIndex = kgData.nodes.findIndex(i => i.id === n.id);
+                if (nodeIndex !== -1) {
+                    kgData.nodes.splice(nodeIndex, 1);
+                }
+                kgData.links = kgData.links.filter(link =>
+                    link.source !== n.id && link.target !== n.id
+                );
+            });
+            try {
+                if (typeof kg !== 'undefined' && typeof kg.setOption === 'function') {
+                    kg.setOption({ nodes: kgData.nodes, links: kgData.links })
+                    closeSidebar()
+                    persistKgData()
+                    safeReload('删除节点')
+                }
+            } catch (e) { console.error('kg.setOption failed', e) }
+            return new Promise((resolve) => {
+                setTimeout(() => resolve({ code: 200 }), 100)
+            })
+        }
+
+        const changeNodeColor = (node) => {
+            return new Promise((resolve) => {
+                const colorInput = document.createElement('input')
+                colorInput.type = 'color'
+                colorInput.value = (node && node.color && node.color.startsWith('#')) ? node.color : '#f0576c'
+                colorInput.onchange = () => {
+                    const newColor = colorInput.value
+                    try {
+                        if (typeof kgData !== 'undefined' && Array.isArray(kgData.nodes)) {
+                            const idx = kgData.nodes.findIndex(n => n.id === node.id)
+                            if (idx !== -1) kgData.nodes[idx].color = newColor
+                        }
+                    } catch (e) { console.error('update kgData failed', e) }
+                    try {
+                        if (typeof kg !== 'undefined' && typeof kg.setOption === 'function') {
+                            kg.setOption({ nodes: kgData.nodes, links: kgData.links })
+                            persistKgData()
+                        }
+                    } catch (e) { console.error('apply color failed', e) }
+                    resolve({ success: true, nodeId: node.id, newColor })
+                }
+                colorInput.oncancel = () => resolve({ success: false })
+                colorInput.click()
+            })
+        }
+
+        const addRelationNode = (focusNode) => {
+            return new Promise((resolve) => {
+                if (!document.getElementById('kg-add-relation-sidebar')) {
+                    const sidebar = document.createElement('div')
+                    sidebar.id = 'kg-add-relation-sidebar'
+                    sidebar.innerHTML = `
+                        <div class="kg-sidebar-header">添加关联节点</div>
+                        <div class="kg-sidebar-body">
+                            <div class="kg-field"><label>目标节点：</label><div id="kg-sidebar-target">${focusNode ? focusNode.name : ''}</div></div>
+                            <div class="kg-field"><label for="kg-new-node-name">节点名称</label><input id="kg-new-node-name" type="text" placeholder="新节点名称"></div>
+                            <div class="kg-field"><label for="kg-new-link-type">关系类型</label><input id="kg-new-link-type" type="text" placeholder="关系类型"></div>
+                            <div class="kg-sidebar-actions">
+                                <button id="kg-add-relation-submit">添加</button>
+                                <button id="kg-add-relation-cancel">取消</button>
+                            </div>
+                        </div>
+                    `
+                    const style = document.createElement('style')
+                    style.innerHTML = `
+                        #kg-add-relation-sidebar { position: fixed; right: 0; top: 0; height: 100%; width: 320px; background: #fff; box-shadow: -6px 0 30px rgba(0,0,0,0.2); transform: translateX(100%); transition: transform 250ms ease; z-index: 9999; font-family: "Microsoft YaHei", Arial; }
+                        #kg-add-relation-sidebar.open { transform: translateX(0); }
+                        #kg-add-relation-sidebar .kg-sidebar-header { padding: 18px; font-weight: 700; border-bottom: 1px solid #eee; }
+                        #kg-add-relation-sidebar .kg-sidebar-body { padding: 16px; }
+                        #kg-add-relation-sidebar .kg-field { margin-bottom: 12px; }
+                        #kg-add-relation-sidebar .kg-field label { display:block; margin-bottom:6px; color:#333; font-size:13px }
+                        #kg-add-relation-sidebar .kg-field input { width:100%; padding:8px 10px; border:1px solid #ddd; border-radius:6px }
+                        #kg-add-relation-sidebar .kg-sidebar-actions { display:flex; gap:8px; margin-top:12px }
+                        #kg-add-relation-sidebar .kg-sidebar-actions button { flex:1; padding:10px; border-radius:6px; border: none; cursor: pointer }
+                        #kg-add-relation-submit { background: linear-gradient(90deg,#667eea,#764ba2); color:#fff }
+                        #kg-add-relation-cancel { background:#f0f0f0 }
+                    `
+                    sidebar.appendChild(style)
+                    document.body.appendChild(sidebar)
+                }
+
+                const sidebarEl = document.getElementById('kg-add-relation-sidebar')
+                const targetEl = sidebarEl.querySelector('#kg-sidebar-target')
+                if (targetEl) targetEl.textContent = focusNode ? focusNode.name : ''
+                const nameInput = sidebarEl.querySelector('#kg-new-node-name')
+                const typeInput = sidebarEl.querySelector('#kg-new-link-type')
+                if (nameInput) nameInput.value = ''
+                if (typeInput) typeInput.value = ''
+                sidebarEl.classList.add('open')
+
+                const cleanup = () => {
+                    sidebarEl.classList.remove('open')
+                    submitBtn.removeEventListener('click', onSubmit)
+                    cancelBtn.removeEventListener('click', onCancel)
+                }
+
+                const onSubmit = () => {
+                    const nodeName = nameInput.value.trim()
+                    if (!nodeName) { alert('请输入节点名称'); return; }
+                    const linkType = typeInput.value.trim() || '关联'
+                    const newId = Date.now()
+                    const newNode = { id: newId, type: 'idiom', name: nodeName, r: 20, color: kg.defaultNodeColor, cover: '', tags: [] }
+                    const newLink = (focusNode && focusNode.id !== undefined) ? { id: Date.now() + 1, source: focusNode.id, type: linkType, target: newId } : null
+
+                    try {
+                        if (typeof kgData !== 'undefined' && Array.isArray(kgData.nodes)) {
+                            if (!kgData.nodes.some(n => n.id === newNode.id)) kgData.nodes.push(newNode)
+                            if (newLink) {
+                                if (!Array.isArray(kgData.links)) kgData.links = []
+                                if (!kgData.links.some(l => l.id === newLink.id)) kgData.links.push(newLink)
+                            }
+                            // Propagate hierarchy tags through the graph
+                            propagateHierarchyTags();
+                            ensureHierarchyTagsConfig();
+                        }
+                    } catch (e) { console.error('update kgData failed', e) }
+
+                    cleanup()
+                    resolve({ nodes: [newNode], links: newLink ? [newLink] : [] })
+                    persistKgData();
+                    safeReload('添加关联节点')
+                }
+
+                const onCancel = () => {
+                    cleanup()
+                    resolve({ nodes: [], links: [] })
+                }
+
+                const submitBtn = document.getElementById('kg-add-relation-submit')
+                const cancelBtn = document.getElementById('kg-add-relation-cancel')
+                submitBtn.addEventListener('click', onSubmit)
+                cancelBtn.addEventListener('click', onCancel)
+            })
+        }
+
+        // 编辑节点属性
+        const editNodeProperties = (focusNode) => {
+            return new Promise((resolve) => {
+                // 初始化 properties 对象
+                if (!focusNode.properties) {
+                    focusNode.properties = {};
+                }
+
+                // 第一个弹窗：输入属性名
+                const propertyKey = prompt('请输入属性:', '');
+
+                if (propertyKey === null) {
+                    return; // 用户取消
+                }
+
+                if (!propertyKey.trim()) {
+                    alert('属性名不能为空');
+                    return;
+                }
+
+                const key = propertyKey.trim();
+
+                // 第二个弹窗：输入属性值
+                const existingValue = focusNode.properties.hasOwnProperty(key) ? focusNode.properties[key] : '';
+                const propertyValue = prompt('请输入属性值:', existingValue);
+
+                if (propertyValue === null) {
+                    return; // 用户取消
+                }
+
+                // 更新属性
+                focusNode.properties[key] = propertyValue.trim();
+
+                persistKgData();
+
+                // 更新侧边栏显示
+                showNodeDetails(focusNode);
+                alert(`属性已${existingValue ? '更新' : '添加'}: ${key} = ${propertyValue.trim()}`);
+            })
+        }
+
+        // ==================== Init ====================
+        document.getElementById('idiomName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addIdiomNode();
+        });
+
+        window.addEventListener('load', function() {
+            initKnowledgeGraph();
+            loadKnowledgeGraph();
+        });
+
+        const menu = {
+            'idiom': [
+                { name: '➕ 关联节点', type: 'add_relation', event: { type: 'add', source: addRelationNode } },
+                { name: '🎨 修改颜色', type: 'change_color', event: { type: 'change_color', source: changeNodeColor } },
+                { name: '✏️ 编辑属性', type: 'edit_node', event: { type: 'edit_node', source: editNodeProperties } },
+                { name: '🗑️ 删除节点', type: 'del', event: { type: 'del', source: delPromise } }
+            ]
+        }
+
+        // ==================== Init KG ====================
+        function initKnowledgeGraph() {
+            const target = document.getElementById('kg');
+
+            if (typeof kg !== 'undefined') {
+                kg.init(target);
+
+                // Patch kg.setOption with boundary clamping wrapper
+                _originalSetOption = kg.setOption.bind(kg);
+                kg.setOption = safeSetOption;
+
+                kg.setOption({
+                    nodes: kgData.nodes,
+                    links: kgData.links,
+                    menu,
+                    events: {
+                        canvas: [
+                            { type: 'click', method: handleCanvasClick }
+                        ],
+                        node: [
+                            { type: 'click', method: handleNodeClick },
+                            { type: 'click', method: handleNodeSelect }
+                        ],
+                        link: [
+                            { type: 'click', method: handleLinkClick }
+                        ]
+                    },
+                    dragLock: false
+                });
+                kgInitialized = true;
+
+                // Periodic boundary enforcement during simulation ticks.
+                // The simulation's ticked() callback updates SVG positions directly,
+                // so we need a periodic check to pull escapee nodes back.
+                setInterval(() => {
+                    if (kgData.nodes.length === 0) return;
+                    let changed = false;
+                    const { w, h } = getSvgBounds();
+                    const margin = 10;
+                    kgData.nodes.forEach(n => {
+                        const r = n.r || 20;
+                        const minX = r + margin, maxX = w - r - margin;
+                        const minY = r + margin, maxY = h - r - margin;
+                        // Fix nodes that escaped bounds
+                        if (n.x < minX || n.x > maxX || n.y < minY || n.y > maxY) {
+                            n.x = Math.max(minX, Math.min(maxX, n.x));
+                            n.y = Math.max(minY, Math.min(maxY, n.y));
+                            // If node has fixed position, clamp those too
+                            if (n.fx !== null && n.fx !== undefined) {
+                                n.fx = Math.max(minX, Math.min(maxX, n.fx));
+                            }
+                            if (n.fy !== null && n.fy !== undefined) {
+                                n.fy = Math.max(minY, Math.min(maxY, n.fy));
+                            }
+                            changed = true;
+                        }
+                    });
+                    if (changed) {
+                        _originalSetOption({ nodes: kgData.nodes, links: kgData.links });
+                    }
+                }, 500);
+            } else {
+                target.innerHTML = '<div style="color: white; padding: 20px; text-align: center;">知识图谱库未加载</div>';
+            }
+        }
+
+        // ==================== Event Handlers ====================
+        function handleCanvasClick() {
+            if (currentMode === 'edit') {
+                selectedNodes = [];
+                selectedLinks = [];
+                closeSidebar();
+                updateSelection();
+            } else {
+                linkModeNodes = [];
+                updateSelection();
+            }
+        }
+
+        function handleNodeClick(node) {
+            if (currentMode === 'link') {
+                if (!linkModeNodes.includes(node)) {
+                    linkModeNodes.push(node);
+                    if (linkModeNodes.length === 2) {
+                        const linkType = prompt(`请输入 ${linkModeNodes[0].name} 与 ${linkModeNodes[1].name} 之间的关系类型:`, '关联');
+                        if (linkType !== null && linkType.trim()) {
+                            createLink(linkModeNodes[0], linkModeNodes[1], linkType.trim());
+                        }
+                        linkModeNodes = [];
+                        updateSelection();
+                        safeReload('创建关联')
+                    }
+                }
+            } else {
+                selectedNodes = [node];
+                showNodeDetails(node);
+                updateSelection();
+            }
+        }
+
+        function handleNodeSelect(node) { }
+
+        function handleLinkClick(link) {
+            if (currentMode === 'edit') {
+                selectedLinks = [link];
+                showLinkDetails(link);
+                updateSelection();
+            }
+        }
+
+        function updateSelection() {
+            const infoPanel = document.getElementById('kgInfoPanel');
+            const nodesInfo = document.getElementById('selectedNodesInfo');
+
+            if (currentMode === 'link') {
+                if (linkModeNodes.length > 0) {
+                    infoPanel.style.display = 'block';
+                    nodesInfo.textContent = `正在选择节点: ${linkModeNodes.map(n => n.name).join(' -> ')}`;
+                } else {
+                    infoPanel.style.display = 'none';
+                }
+            } else {
+                if (selectedNodes.length > 0) {
+                    infoPanel.style.display = 'block';
+                    const n = selectedNodes[0];
+                    const tagStr = (n.tags && n.tags.length > 0) ? ` | 标签: ${n.tags.join(', ')}` : '';
+                    nodesInfo.textContent = `当前选中: ${n.name}${tagStr}`;
+                } else if (selectedLinks.length > 0) {
+                    const link = selectedLinks[0];
+                    const sourceNode = kgData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
+                    const targetNode = kgData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target));
+                    infoPanel.style.display = 'block';
+                    nodesInfo.textContent = `当前选中连接: ${sourceNode?.name || '?'} - ${targetNode?.name || '?'} (${link.type})`;
+                } else {
+                    infoPanel.style.display = 'none';
+                }
+            }
+        }
+
+        // ==================== Link Creation ====================
+        function createLink(node1, node2, linkType = '关联') {
+            const srcId = typeof node1.id !== 'undefined' ? node1.id : node1;
+            const tgtId = typeof node2.id !== 'undefined' ? node2.id : node2;
+            const link = { id: Date.now(), source: srcId, target: tgtId, type: linkType, properties: {} };
+            kgData.links.push(link);
+            // Propagate hierarchy tags after adding new link
+            propagateHierarchyTags();
+            ensureHierarchyTagsConfig();
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+            alert(`已建立连接: ${node1.name} - ${node2.name} (${linkType})`);
+            return true;
+        }
+
+        // ==================== Add Node ====================
+        async function addIdiomNode() {
+            if (isReduced) { alert('归约状态下不可添加节点，请先展开图谱'); return; }
+            const idiomName = document.getElementById('idiomName').value.trim();
+            if (!idiomName) { alert('请输入节点名称'); return; }
+            if (!kgInitialized) { alert('知识图谱库未加载'); return; }
+
+            const exists = kgData.nodes.some(node => node.name === idiomName);
+            if (exists) { 
+                // 获取这个节点
+                const node = kgData.nodes.find(node => node.name === idiomName);
+                // 提取它相邻的节点和边
+                const adjacentNodes = kgData.nodes.filter(n => kgData.links.some(link => (link.source === node.id && link.target === n.id) || (link.target === node.id && link.source === n.id)));
+                console.log(adjacentNodes)
+                const adjacentLinks = kgData.links.filter(link => link.source === node.id || link.target === node.id);
+                // 在图中直接显示
+                kg.setOption = safeSetOption
+                kg.setOption({ nodes: [node,...adjacentNodes], links: adjacentLinks });
+                return;
+            }
+
+            const newNode = {
+                id: Date.now(),
+                type: 'idiom',
+                name: idiomName,
+                r: 30,
+                color: BAR_COLORS[Math.floor(Math.random() * BAR_COLORS.length)],
+                cover: '',
+                tags: []
+            };
+
+            // If this is the first node, prompt user to set hierarchy tag
+            const isFirstNode = kgData.nodes.length === 0;
+            if (isFirstNode) {
+                const setTag = confirm('这是第一个节点，是否为其设置 "First" 标签？\n\n设置后，由该节点指向的其他节点将自动获得 "Second" 标签，以此类推形成层级关系。');
+                if (setTag) {
+                    assignHierarchyTag(newNode, 'First');
+                }
+            }
+            kgData.nodes.push(newNode);
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+            safeReload('添加节点');
+            document.getElementById('idiomName').value = '';
+            selectedNodes = [newNode];
+            updateSelection();
+            showNodeDetails(newNode);
+        };
+
+            
+
+        // ==================== Clear / Save / Export ====================
+        function clearKnowledgeGraph() {
+            if (isReduced) { alert('归约状态下不可清空图谱，请先展开图谱'); return; }
+            if (!kgInitialized) return;
+            if (confirm('确定要清空所有节点和连接吗？')) {
+                kgData = { nodes: [], links: [] };
+                selectedNodes = [];
+                selectedLinks = [];
+                kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+                closeSidebar();
+            }
+        }
+
+        function saveKnowledgeGraph() {
+            persistKgData();
+            alert('知识图谱已保存到浏览器存储区');
+        }
+
+        // 下拉菜单切换
+        function toggleDropdown() {
+            const dropdown = document.querySelector('.dropdown');
+            dropdown.classList.toggle('open');
+            
+            // 点击外部关闭下拉菜单
+            if (dropdown.classList.contains('open')) {
+                setTimeout(() => {
+                    document.addEventListener('click', closeDropdownOnOutsideClick);
+                }, 0);
+            }
+        }
+
+        function closeDropdownOnOutsideClick(e) {
+            const dropdown = document.querySelector('.dropdown');
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('open');
+                document.removeEventListener('click', closeDropdownOnOutsideClick);
+            }
+        }
+
+        function exportKnowledgeGraph() {
+            if (!kgData || !Array.isArray(kgData.nodes)) {
+                alert('当前没有可导出的图谱数据');
+                return;
+            }
+            const exportNodes = kgData.nodes.map(n => ({
+                id: n.id,
+                labels: n.type ? [n.type] : [],
+                properties: Object.assign({}, {
+                    name: n.name,
+                    color: n.color,
+                    r: n.r,
+                    cover: n.cover || '',
+                    tags: n.tags || []
+                }, n.properties || {})
+            }));
+            const exportRels = (kgData.links || []).map(l => ({
+                id: l.id,
+                start: (typeof l.source === 'object' && l.source !== null) ? l.source.id : l.source,
+                end: (typeof l.target === 'object' && l.target !== null) ? l.target.id : l.target,
+                type: l.type || 'RELATES_TO',
+                properties: Object.assign({}, l.properties || {})
+            }));
+            const exportObj = { nodes: exportNodes, relationships: exportRels, tagsConfig }
+            const jsonStr = JSON.stringify(exportObj, null, 2)
+            const blob = new Blob([jsonStr], { type: 'application/json;charset=utf-8' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            const ts = new Date().toISOString().replace(/[:.]/g, '-')
+            a.download = `knowledge_graph_${ts}.json`
+            document.body.appendChild(a)
+            a.click()
+            document.body.removeChild(a)
+            URL.revokeObjectURL(url)
+        }
+
+        // 显示提示消息
+        function showExportToast(message, type = 'loading') {
+            // 移除已存在的提示
+            const existingToast = document.querySelector('.export-toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `export-toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    toast.remove();
+                }, 3000);
+            }
+            
+            return toast;
+        }
+
+        const XLINK_NS = 'http://www.w3.org/1999/xlink';
+
+        function getSvgImageHref(svgImageEl) {
+            return (
+                svgImageEl.getAttribute('href') ||
+                svgImageEl.getAttribute('xlink:href') ||
+                svgImageEl.getAttributeNS(XLINK_NS, 'href') ||
+                ''
+            ).trim();
+        }
+
+        function setSvgImageHref(svgImageEl, url) {
+            svgImageEl.removeAttribute('href');
+            svgImageEl.removeAttribute('xlink:href');
+            svgImageEl.removeAttributeNS(XLINK_NS, 'href');
+            if (!url) return;
+            svgImageEl.setAttributeNS(XLINK_NS, 'href', url);
+            svgImageEl.setAttribute('href', url);
+        }
+
+        /**
+         * 图谱节点封面使用 SVG <image xlink:href="远程URL">，html2canvas 在 allowTaint:false 下无法绘制，
+         * 且事后给 HTML <img> 加 crossOrigin 对 SVG 无效。导出前将 http(s) 资源拉取为 data URL 并写回，结束后恢复。
+         */
+        async function inlineRemoteSvgImagesForExport(container) {
+            const images = Array.from(container.querySelectorAll('image'));
+            const entries = images
+                .map(el => ({ el, url: getSvgImageHref(el) }))
+                .filter(x => x.url && !x.url.startsWith('data:') && /^https?:\/\//i.test(x.url));
+
+            if (entries.length === 0) {
+                return () => {};
+            }
+
+            const cache = new Map();
+            async function fetchAsDataUrl(url) {
+                if (cache.has(url)) return cache.get(url);
+                try {
+                    const res = await fetch(url, { mode: 'cors', credentials: 'omit' });
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    const blob = await res.blob();
+                    const dataUrl = await new Promise((resolve, reject) => {
+                        const fr = new FileReader();
+                        fr.onload = () => resolve(fr.result);
+                        fr.onerror = () => reject(new Error('FileReader'));
+                        fr.readAsDataURL(blob);
+                    });
+                    cache.set(url, dataUrl);
+                    return dataUrl;
+                } catch (e) {
+                    console.warn('导出内联资源失败（将保留原地址，截图中可能仍异常）:', url, e);
+                    cache.set(url, null);
+                    return null;
+                }
+            }
+
+            const uniqueUrls = [...new Set(entries.map(e => e.url))];
+            await Promise.all(uniqueUrls.map(u => fetchAsDataUrl(u)));
+
+            const restores = [];
+            for (const { el, url } of entries) {
+                const dataUrl = cache.get(url);
+                if (!dataUrl) continue;
+                restores.push(() => setSvgImageHref(el, url));
+                setSvgImageHref(el, dataUrl);
+            }
+
+            return () => {
+                restores.reverse().forEach(fn => fn());
+            };
+        }
+
+        // 动态加载html2canvas
+        function loadHtml2Canvas() {
+            return new Promise((resolve, reject) => {
+                if (window.html2canvas) {
+                    resolve(window.html2canvas);
+                    return;
+                }
+                
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+                script.onload = () => resolve(window.html2canvas);
+                script.onerror = () => reject(new Error('html2canvas加载失败'));
+                document.head.appendChild(script);
+            });
+        }
+
+        // 图像导出功能
+        async function exportKnowledgeGraphAsImage() {
+            // 关闭下拉菜单
+            document.querySelector('.dropdown').classList.remove('open');
+            
+            const kgElement = document.getElementById('kg');
+            if (!kgElement) {
+                showExportToast('未找到图谱区域', 'error');
+                return;
+            }
+            
+            const toast = showExportToast('正在生成图谱截图...', 'loading');
+            let restoreSvgHrefs = null;
+
+            try {
+                // 加载html2canvas
+                const html2canvas = await loadHtml2Canvas();
+
+                restoreSvgHrefs = await inlineRemoteSvgImagesForExport(kgElement);
+
+                // 等待内联后的 <image> 解码与布局稳定
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // 生成截图
+                const canvas = await html2canvas(kgElement, {
+                    backgroundColor: '#ffffff',
+                    scale: 2, // 提高清晰度
+                    useCORS: true,
+                    allowTaint: false,
+                    logging: false
+                });
+
+                // 转换为PNG并下载
+                const link = document.createElement('a');
+                const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+                link.download = `knowledge_graph_${ts}.png`;
+                link.href = canvas.toDataURL('image/png');
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                toast.remove();
+                showExportToast('图谱图像导出成功！', 'success');
+                
+            } catch (error) {
+                console.error('导出图像失败:', error);
+                toast.remove();
+                showExportToast('导出图像失败: ' + error.message, 'error');
+            } finally {
+                if (typeof restoreSvgHrefs === 'function') {
+                    try { restoreSvgHrefs(); } catch (e) { console.warn('restore svg hrefs', e); }
+                }
+            }
+        }
+
+        // ==================== Import ====================
+        // ==================== Import ====================
+        function importKnowledgeGraph(event) {
+            if (isReduced) { alert('归约状态下不可导入图谱，请先展开图谱'); event.target.value = ''; return; }
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // CSV解析函数
+            function parseCSV(text) {
+                const lines = text.trim().split(/\r?\n/);
+                if (lines.length < 2) {
+                    throw new Error('CSV文件至少需要包含表头和一行数据');
+                }
+
+                // 解析单行CSV，处理引号和转义
+                function parseCSVLine(line) {
+                    const result = [];
+                    let current = '';
+                    let inQuotes = false;
+                    
+                    for (let i = 0; i < line.length; i++) {
+                        const char = line[i];
+                        if (char === '"') {
+                            if (inQuotes && line[i + 1] === '"') {
+                                current += '"';
+                                i++;
+                            } else {
+                                inQuotes = !inQuotes;
+                            }
+                        } else if (char === ',' && !inQuotes) {
+                            result.push(current.trim());
+                            current = '';
+                        } else {
+                            current += char;
+                        }
+                    }
+                    result.push(current.trim());
+                    return result;
+                }
+
+                const headers = parseCSVLine(lines[0]);
+                const rows = lines.slice(1).filter(line => line.trim()).map(line => parseCSVLine(line));
+                
+                return { headers, rows };
+            }
+
+            // 处理CSV导入
+            function handleCSVImport(content) {
+                const { headers, rows } = parseCSV(content);
+                const colCount = headers.length;
+                
+                // 识别CSV格式
+                let formatType;
+                if (colCount === 3) {
+                    formatType = 'triple'; // subject,predicate,object
+                } else if (colCount === 5) {
+                    formatType = 'tagged'; // subject,tag,predicate,object,tag2
+                } else {
+                    throw new Error(`不支持的CSV格式，需要3列或5列，当前为${colCount}列`);
+                }
+
+                // 使用Map缓存节点，按name去重
+                const nodeMap = new Map();
+                const links = [];
+
+                rows.forEach((row, index) => {
+                    let subject, predicate, object, tag1, tag2;
+                    
+                    if (formatType === 'triple') {
+                        [subject, predicate, object] = row;
+                        tag1 = '';
+                        tag2 = '';
+                    } else {
+                        [subject, tag1, predicate, object, tag2] = row;
+                    }
+
+                    // 创建或获取subject节点
+                    if (!nodeMap.has(subject)) {
+                        nodeMap.set(subject, {
+                            id: Date.now() + Math.random(),
+                            type: 'idiom',
+                            name: subject,
+                            color: kg.defaultNodeColor,
+                            r: kg.defaultRadius,
+                            cover: '',
+                            tags: tag1 ? [tag1] : [],
+                            properties: {}
+                        });
+                    }
+
+                    // 创建或获取object节点
+                    if (!nodeMap.has(object)) {
+                        nodeMap.set(object, {
+                            id: Date.now() + Math.random(),
+                            type: 'idiom',
+                            name: object,
+                            color: kg.defaultNodeColor,
+                            r: kg.defaultRadius,
+                            cover: '',
+                            tags: tag2 ? [tag2] : [],
+                            properties: {}
+                        });
+                    }
+
+                    // 创建关系
+                    const sourceNode = nodeMap.get(subject);
+                    const targetNode = nodeMap.get(object);
+                    
+                    links.push({
+                        id: Date.now() + index,
+                        source: sourceNode.id,
+                        target: targetNode.id,
+                        type: predicate || 'RELATES_TO',
+                        properties: {}
+                    });
+                });
+
+                const nodes = Array.from(nodeMap.values());
+                return { nodes, links };
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const fileName = file.name.toLowerCase();
+                    let importedNodes, importedLinks;
+
+                    // 判断文件格式
+                    if (fileName.endsWith('.csv') || (!fileName.endsWith('.json') && content.trim().startsWith('subject'))) {
+                        // CSV格式导入
+                        const csvResult = handleCSVImport(content);
+                        importedNodes = csvResult.nodes;
+                        importedLinks = csvResult.links;
+                    } else {
+                        // JSON格式导入（原有逻辑）
+                        const data = JSON.parse(content);
+                        if (!data.nodes || !Array.isArray(data.nodes)) {
+                            alert('导入失败: 文件格式不正确，缺少 nodes 数组');
+                            return;
+                        }
+
+                        // Convert imported format to internal format
+                        importedNodes = data.nodes.map(n => {
+                            const props = n.properties || {};
+
+                            // 定义要过滤掉的字段（已经单独提取的公共属性）
+                            const excludeFields = ['name', 'color', 'r', 'cover', 'tags'];
+                            
+                            // 生成过滤后的 properties（只保留自定义属性）
+                            const filteredProps = Object.entries(props).reduce((acc, [key, value]) => {
+                                if (!excludeFields.includes(key)) {
+                                    acc[key] = value;
+                                }
+                                return acc;
+                            }, {});
+
+                            return {
+                                id: n.id || Date.now() + Math.random(),
+                                type: (n.labels && n.labels[0]) || 'idiom',
+                                name: props.name || '未命名',
+                                color: props.color || BAR_COLORS[Math.floor(Math.random() * BAR_COLORS.length)],
+                                r: props.r || 30,
+                                cover: props.cover || '',
+                                tags: props.tags || [],
+                                properties: filteredProps
+                            };
+                        });
+
+                        importedLinks = (data.relationships || []).map((l, i) => ({
+                            id: l.id || Date.now() + i,
+                            source: l.start,
+                            target: l.end,
+                            type: l.type || 'RELATES_TO',
+                            properties: l.properties || {}
+                        }));
+
+                        // Import tags config if present
+                        if (data.tagsConfig && typeof data.tagsConfig === 'object') {
+                            tagsConfig = Object.assign(tagsConfig, data.tagsConfig);
+                        }
+                    }
+
+                    kgData = { nodes: importedNodes, links: importedLinks };
+                    selectedNodes = [];
+                    selectedLinks = [];
+
+                    // Propagate hierarchy tags from imported data
+                    propagateHierarchyTags();
+                    ensureHierarchyTagsConfig();
+
+                    kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+                    persistKgData();
+                    closeSidebar();
+
+                    alert(`导入成功! ${importedNodes.length} 个节点, ${importedLinks.length} 条关系`);
+                } catch (err) {
+                    alert('导入失败: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            // Reset input so same file can be re-imported
+            event.target.value = '';
+        }
+
+        // ==================== Load ====================
+        function loadKnowledgeGraph() {
+            if (!kgInitialized) return;
+            const saved = localStorage.getItem('idiomKnowledgeGraph');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    kgData = parsed;
+                    // Ensure tags field on old nodes
+                    kgData.nodes.forEach(n => {
+                        if (!n.tags) n.tags = [];
+                        if (!n.cover) n.cover = '';
+                    });
+                    // Propagate hierarchy tags from loaded data
+                    propagateHierarchyTags();
+                    ensureHierarchyTagsConfig();
+                    kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+                } catch (e) { console.error('Failed to load knowledge graph', e); }
+            }
+            // Load tags config
+            const savedTags = localStorage.getItem('kg_tags_config');
+            if (savedTags) {
+                try { tagsConfig = JSON.parse(savedTags); } catch (e) { tagsConfig = {}; }
+            }
+            // Ensure hierarchy tag configs are present
+            ensureHierarchyTagsConfig();
+        }
+
+        // ==================== Mode Toggle ====================
+        function toggleMode() {
+            if (isReduced) { alert('归约状态下不可切换模式，请先展开图谱'); return; }
+            const modeBtn = document.getElementById('modeBtn');
+            const editBtn = document.getElementById('editNodeBtn');
+
+            if (currentMode === 'edit') {
+                currentMode = 'link';
+                modeBtn.textContent = '关联';
+                modeBtn.classList.remove('mode-active');
+                modeBtn.classList.add('active');
+                if (editBtn) editBtn.disabled = true;
+                selectedNodes = [];
+                selectedLinks = [];
+                linkModeNodes = [];
+                closeSidebar();
+            } else {
+                currentMode = 'edit';
+                modeBtn.textContent = '编辑';
+                modeBtn.classList.remove('active');
+                modeBtn.classList.add('mode-active');
+                if (editBtn) editBtn.disabled = false;
+                linkModeNodes = [];
+            }
+            updateSelection();
+        }
+
+        // ==================== Hierarchy Reduction Prerequisites ====================
+        /**
+         * Check whether the graph satisfies prerequisites for reduction:
+         * 1. At least 2 hierarchy levels exist
+         * 2. No internal links within any single level
+         */
+        function checkHierarchyPrerequisites() {
+            const nodesByLayer = {};
+            HIERARCHY_TAGS.forEach(tag => nodesByLayer[tag] = new Set());
+
+            kgData.nodes.forEach(n => {
+                const hTag = getHierarchyTag(n);
+                if (hTag) {
+                    nodesByLayer[hTag.toLowerCase()].add(n.id);
+                }
+            });
+
+            // Check each layer for internal links (source and target in the same layer)
+            for (const layer of HIERARCHY_TAGS) {
+                const nodeIds = nodesByLayer[layer];
+                if (nodeIds.size <= 1) continue;
+                const hasInternalLink = kgData.links.some(l => {
+                    const srcId = typeof l.source === 'object' && l.source !== null ? l.source.id : l.source;
+                    const tgtId = typeof l.target === 'object' && l.target !== null ? l.target.id : l.target;
+                    return nodeIds.has(srcId) && nodeIds.has(tgtId);
+                });
+                if (hasInternalLink) {
+                    const layerIdx = HIERARCHY_TAGS.indexOf(layer) + 1;
+                    return {
+                        valid: false,
+                        message: `第 ${layerIdx} 层 (${layer}) 内部存在指向关系，无法归约。\n请确保同一层级的节点之间没有连线。`
+                    };
+                }
+            }
+
+            const usedLayers = HIERARCHY_TAGS.filter(tag => nodesByLayer[tag].size > 0);
+            if (usedLayers.length < 2) {
+                return { valid: false, message: '图谱中至少需要存在两个具有层级标签的层级才能执行归约。' };
+            }
+
+            return { valid: true };
+        }
+
+        // ==================== Read-Only Mode ====================
+        function enterReadOnlyMode() {
+            isReduced = true;
+            window.kg_readOnly = true;
+            currentMode = 'edit';
+
+            // Disable editing controls
+            document.getElementById('idiomName').disabled = true;
+
+            const toolbar = document.querySelector('.kg-toolbar');
+            if (toolbar) {
+                toolbar.querySelectorAll('button').forEach(btn => {
+                    const onclick = btn.getAttribute('onclick') || '';
+                    if (onclick.includes('addIdiomNode') ||
+                        onclick.includes('toggleMode') ||
+                        onclick.includes('openTagManager') ||
+                        onclick.includes('clearKnowledgeGraph') ||
+                        onclick.includes('importFileInput')) {
+                        btn.disabled = true;
+                    }
+                });
+                document.getElementById('importFileInput').disabled = true;
+            }
+
+            // Reset mode button to view state
+            const modeBtn = document.getElementById('modeBtn');
+            if (modeBtn) {
+                modeBtn.textContent = '查看';
+                modeBtn.classList.add('mode-active');
+                modeBtn.classList.remove('active');
+            }
+
+            // Update expand button
+            const toggleBtn = document.getElementById('toggleExpandBtn');
+            toggleBtn.textContent = '全部展开';
+
+            closeSidebar();
+        }
+
+        function exitReadOnlyMode() {
+            isReduced = false;
+            window.kg_readOnly = false;
+
+            // Re-enable editing controls
+            document.getElementById('idiomName').disabled = false;
+
+            const toolbar = document.querySelector('.kg-toolbar');
+            if (toolbar) {
+                toolbar.querySelectorAll('button').forEach(btn => {
+                    btn.disabled = false;
+                });
+                document.getElementById('importFileInput').disabled = false;
+            }
+
+            // Reset mode button
+            const modeBtn = document.getElementById('modeBtn');
+            if (modeBtn) {
+                modeBtn.textContent = '查看';
+                modeBtn.classList.add('mode-active');
+                modeBtn.classList.remove('active');
+            }
+
+            // Update expand button
+            const toggleBtn = document.getElementById('toggleExpandBtn');
+            toggleBtn.textContent = '全部归约';
+        }
+
+        // ==================== 展开/归约 Toggle ====================
+        /** 将核内归约数据全部展开并退出只读，与「全部展开」按钮逻辑一致 */
+        function expandGraphFullyFromReducedState() {
+            if (!window.kg || !window.kg.expandAll) return;
+            for (let i = 0; i < HIERARCHY_TAGS.length; i++) {
+                window.kg.expandAll();
+            }
+            exitReadOnlyMode();
+            persistKgData();
+        }
+
+        function toggleExpand() {
+            if (!isReduced) {
+                // === Execute reduction ===
+                const check = checkHierarchyPrerequisites();
+                if (!check.valid) {
+                    alert(check.message);
+                    return;
+                }
+
+                if (window.kg && window.kg.reduceAllLevels) {
+                    window.kg.reduceAllLevels();
+                }
+
+                enterReadOnlyMode();
+            } else {
+                expandGraphFullyFromReducedState();
+            }
+        }
+
+        // ==================== Sidebar ====================
+        function showNodeDetails(node) {
+            const sidebar = document.getElementById('kgSidebar');
+            const sidebarTitle = document.getElementById('sidebarTitle');
+            const sidebarContent = document.getElementById('sidebarContent');
+
+            sidebarTitle.textContent = node.name;
+
+            const relatedLinks = kgData.links.filter(link => {
+                const srcId = typeof link.source === 'object' ? link.source.id : link.source;
+                const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
+                return srcId === node.id || tgtId === node.id;
+            });
+
+            // Tags display
+            const tagsHtml = (node.tags && node.tags.length > 0)
+                ? node.tags.map(t => {
+                    const cfg = tagsConfig[t];
+                    const bg = cfg ? cfg.color + '22' : '#e3f2fd';
+                    const color = cfg ? cfg.color : '#1976d2';
+                    return `<span class="kg-sidebar-tag" style="background:${bg};color:${color};" onclick="applyTagToSelection('${t}')">${t}</span>`;
+                }).join('')
+                : '<span style="color:#999;font-size:0.85rem;">无标签</span>';
+
+            // Cover image
+            const coverHtml = node.cover
+                ? `<div style="margin-top:6px;"><img src="${node.cover}" style="max-width:100%;border-radius:8px;max-height:100px;object-fit:cover;"></div>`
+                : '<span style="color:#999;font-size:0.85rem;">无封面</span>';
+
+            let content = `
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">半径</div>
+                    <div class="kg-sidebar-value">${node.r || 20}px</div>
+                </div>
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">颜色</div>
+                    <div class="kg-sidebar-value" style="display:flex;align-items:center;gap:8px;">
+                        <span style="width:20px;height:20px;border-radius:50%;background:${node.color};display:inline-block;border:1px solid #ddd;"></span>
+                        ${node.color || '默认'}
+                    </div>
+                </div>
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">封面</div>
+                    ${coverHtml}
+                </div>
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">标签</div>
+                    <div>${tagsHtml}</div>
+                </div>
+                ${node.properties && Object.keys(node.properties).length > 0
+                    ? Object.entries(node.properties).map(([key, value]) => `
+                        <div class="kg-sidebar-section">
+                            <div class="kg-sidebar-label bold">${key}</div>
+                            <div class="kg-sidebar-value red">${value}</div>
+                        </div>
+                    `).join('')
+                    : ''
+                }
+                ${relatedLinks.length > 0 ? `
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">相关连接 (${relatedLinks.length})</div>
+                    ${(() => {
+                        const grouped = {};
+                        relatedLinks.forEach(link => {
+                            const srcId = typeof link.source === 'object' ? link.source.id : link.source;
+                            const tgtId = typeof link.target === 'object' ? link.target.id : link.target;
+                            const otherNodeId = srcId === node.id ? tgtId : srcId;
+                            const otherNode = kgData.nodes.find(n => n.id === otherNodeId);
+                            const type = link.type || '关联';
+                            if (!grouped[type]) grouped[type] = [];
+                            grouped[type].push(otherNode?.name || '?');
+                        });
+                        return Object.entries(grouped).map(([type, nodes]) => `
+                            <div class="kg-sidebar-value" style="margin-bottom: 10px;">
+                                <strong>${type}:</strong> ${nodes.join(', ')}
+                            </div>
+                        `).join('');
+                    })()}
+                </div>
+                ` : ''}
+                ${!isReduced ? `
+                <div class="kg-sidebar-section" style="margin-top:12px;">
+                    <button onclick="openEditNodeModal()" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#3fb950,#1a7f37);color:#fff;cursor:pointer;font-weight:600;margin-bottom:8px;">✏️ 编辑此节点</button>
+                </div>
+                ` : ''}
+            `;
+
+            sidebarContent.innerHTML = content;
+            sidebar.classList.remove('hidden');
+        }
+
+        function showLinkDetails(link) {
+            const sidebar = document.getElementById('kgSidebar');
+            const sidebarTitle = document.getElementById('sidebarTitle');
+            const sidebarContent = document.getElementById('sidebarContent');
+
+            const sourceNode = kgData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
+            const targetNode = kgData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target));
+            const sourceName = sourceNode ? sourceNode.name : '?';
+            const targetName = targetNode ? targetNode.name : '?';
+
+            sidebarTitle.textContent = `${sourceName} → ${targetName}`;
+
+            let content = `
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">起始节点</div>
+                    <div class="kg-sidebar-value">${sourceName}</div>
+                </div>
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">目标节点</div>
+                    <div class="kg-sidebar-value">${targetName}</div>
+                </div>
+                <div class="kg-sidebar-section">
+                    <div class="kg-sidebar-label">关联类型</div>
+                    <div class="kg-sidebar-value">${link.type || 'RELATES_TO'}</div>
+                </div>
+                ${link.properties && Object.keys(link.properties).length > 0
+                    ? `<div class="kg-sidebar-section">
+                        <div class="kg-sidebar-label">属性</div>
+                        ${Object.entries(link.properties).map(([key, value]) =>
+                            `<div style="margin-bottom:4px;"><strong>${key}:</strong> ${value}</div>`
+                        ).join('')}
+                    </div>`
+                    : '<div class="kg-sidebar-section"><div class="kg-sidebar-label">属性</div><span style="color:#999;font-size:0.85rem;">无属性</span></div>'
+                }
+                ${!isReduced ? `
+                <div class="kg-sidebar-section" style="margin-top:12px;">
+                    <button onclick="openEditLinkModal()" style="width:100%;padding:10px;border:none;border-radius:8px;background:linear-gradient(135deg,#f0883e,#d2691e);color:#fff;cursor:pointer;font-weight:600;margin-bottom:8px;">✏️ 编辑此关联</button>
+                </div>
+                ` : ''}
+            `;
+
+            sidebarContent.innerHTML = content;
+            sidebar.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            document.getElementById('kgSidebar').classList.add('hidden');
+        }
+
+        // ==================== Edit Node Modal ====================
+        function linkEndpointId(ep) {
+            if (ep == null || ep === '') return null
+            return (typeof ep === 'object' && ep !== null) ? ep.id : ep
+        }
+
+        function rebuildEditNeighborsAndLinks(centerNode) {
+            const nbBlock = document.getElementById('editNeighborsBlock')
+            if (!nbBlock) return
+
+            const nid = centerNode.id
+            const neighborIds = new Set()
+            ;(kgData.links || []).forEach(l => {
+                const s = linkEndpointId(l.source)
+                const t = linkEndpointId(l.target)
+                if (s === nid) neighborIds.add(t)
+                if (t === nid) neighborIds.add(s)
+            })
+            neighborIds.delete(nid)
+
+            if (neighborIds.size === 0) {
+                nbBlock.innerHTML = '<span style="color:#888;font-size:0.88rem;">暂无相邻节点</span>'
+            } else {
+                nbBlock.innerHTML = Array.from(neighborIds).map(oid =>
+                    '<div style="margin-bottom:10px">' +
+                    '<div style="font-size:12px;color:#666;margin-bottom:4px">相邻节点（id ' + String(oid) + '）</div>' +
+                    '<input type="text" class="edit-neighbor-name" data-neighbor-id="' + String(oid).replace(/"/g, '&quot;') + '">' +
+                    '</div>'
+                ).join('')
+                nbBlock.querySelectorAll('.edit-neighbor-name').forEach(inp => {
+                    const oid = inp.getAttribute('data-neighbor-id')
+                    const on = kgData.nodes.find(n => String(n.id) === String(oid))
+                    inp.value = on && on.name != null ? String(on.name) : ''
+                })
+            }
+        }
+
+        function openEditNodeModal(specificNode) {
+            if (isReduced) { alert('归约状态下不可编辑节点，请先展开图谱'); return; }
+            if (currentMode !== 'edit') {
+                alert('请在编辑模式下编辑节点');
+                return;
+            }
+
+            const node = specificNode || (selectedNodes.length === 1 ? selectedNodes[0] : null);
+            if (!node) {
+                alert('请先选择一个节点进行编辑');
+                return;
+            }
+
+            editTargetNode = node;
+            editSelectedCover = node.cover || '';
+            editUploadedCover = '';
+
+            document.getElementById('editModalTitle').textContent = `编辑节点: ${node.name}`;
+            document.getElementById('editNodeName').value = node.name != null ? String(node.name) : '';
+            document.getElementById('editRadius').value = node.r || 30;
+            document.getElementById('editRadiusVal').textContent = node.r || 30;
+            document.getElementById('editTags').value = (node.tags || []).join(', ');
+
+            // Build cover grid
+            buildCoverGrid(node.cover);
+
+            // Reset upload preview
+            document.getElementById('coverUploadPreview').style.display = 'none';
+            document.getElementById('coverUploadPreviewImg').src = '';
+
+            rebuildEditNeighborsAndLinks(node);
+
+            document.getElementById('editNodeModal').classList.add('show');
+        }
+
+        function buildCoverGrid(currentCover) {
+            const grid = document.getElementById('coverGrid');
+            const uploadedImages = getUploadedImages(); // 你的原函数，返回 [{id, url}]
+
+            // 合并预设封面 + 已上传封面（标记上传类型，用于右键权限）
+            const allCovers = [
+                ...PRESET_COVERS, // 预设封面：不可删除
+                ...uploadedImages.map(img => ({ 
+                    ...img, 
+                    name: '已上传',
+                    isUploaded: true // 标记：用户上传的，允许删除
+                }))
+            ];
+
+            grid.innerHTML = allCovers.map((c) => `
+                <div class="cover-item ${c.url === currentCover ? 'selected' : ''}" 
+                    data-url="${c.url}"
+                    ${c.isUploaded ? `oncontextmenu="deleteUploadedCover(event, '${c.id}', '${c.url.replace(/'/g, "\\'")}')"` : ''}
+                    onclick="selectCover(this, '${c.url.replace(/'/g, "\\'")}')">
+                    <img src="${c.url}" alt="${c.name}" loading="lazy">
+                    <div class="cover-check">✓</div>
+                </div>
+            `).join('');
+
+            editSelectedCover = currentCover || '';
+        }
+
+        /**
+         * 右键删除已上传封面（完全适配 kg_image_store 结构）
+         * @param {Event} e 右键事件
+         * @param {string} id 图片存储的唯一id
+         * @param {string} url 图片地址
+         */
+        function deleteUploadedCover(e, id, url) {
+            e.preventDefault(); // 阻止浏览器默认右键菜单
+
+            // 二次确认
+            if (!confirm('⚠️ 确定删除这张上传的封面吗？删除后无法恢复')) {
+                return;
+            }
+
+            // 1. 从 localStorage 的 kg_image_store 中删除对应 id
+            try {
+                const imageStore = JSON.parse(localStorage.getItem('kg_image_store') || '{}');
+                delete imageStore[id]; // 按ID删除，精准匹配你的存储结构
+                localStorage.setItem('kg_image_store', JSON.stringify(imageStore));
+            } catch (e) {
+                alert('删除失败，存储结构异常');
+                return;
+            }
+
+            // 2. 处理当前选中的封面：如果删的是当前选中的，清空选中
+            if (editSelectedCover === url) {
+                editSelectedCover = '';
+            }
+
+            // 3. 处理正在编辑的节点：如果节点正在用这个封面，清空节点的封面
+            if (editTargetNode && editTargetNode.cover === url) {
+                editTargetNode.cover = '';
+            }
+
+            // 4. 刷新封面网格
+            buildCoverGrid(editSelectedCover);
+        }
+
+        function selectCover(el, url) {
+            // Deselect all
+            document.querySelectorAll('#coverGrid .cover-item').forEach(item => item.classList.remove('selected'));
+            el.classList.add('selected');
+            editSelectedCover = url;
+            editUploadedCover = ''; // Reset uploaded cover since user selected a preset
+            document.getElementById('coverUploadPreview').style.display = 'none';
+        }
+
+        async function handleCoverUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            try {
+                const url = await uploadImageToServer(file);
+                editUploadedCover = url;
+                editSelectedCover = url;
+
+                // Deselect preset covers
+                document.querySelectorAll('#coverGrid .cover-item').forEach(item => item.classList.remove('selected'));
+
+                // Show preview
+                document.getElementById('coverUploadPreview').style.display = 'block';
+                document.getElementById('coverUploadPreviewImg').src = url;
+            } catch (err) {
+                alert('图片上传失败: ' + err.message);
+            }
+
+            // Reset file input
+            event.target.value = '';
+        }
+
+        function saveEditNode() {
+            if (!editTargetNode) return;
+
+            const idx = kgData.nodes.findIndex(n => n.id === editTargetNode.id);
+            if (idx === -1) return;
+
+            // 仅使用选择的封面或上传的封面，优先已上传的图片
+            let coverToSet = '';
+            if (editUploadedCover) {
+                coverToSet = editUploadedCover;
+            } else if (editSelectedCover) {
+                coverToSet = editSelectedCover;
+            }
+            kgData.nodes[idx].cover = coverToSet;
+
+            // 节点名称
+            const newName = document.getElementById('editNodeName').value.trim();
+            kgData.nodes[idx].name = newName;
+
+            // 半径
+            let inputRadius = parseInt(document.getElementById('editRadius').value);
+            const newRadius = (isNaN(inputRadius) || inputRadius < 10) ? 30 : inputRadius; // 防止输入非法值
+            kgData.nodes[idx].r = newRadius;
+
+            // 邻居节点名称批量修改
+            document.querySelectorAll('#editNeighborsBlock .edit-neighbor-name').forEach(inp => {
+                const oid = inp.getAttribute('data-neighbor-id');
+                const nix = kgData.nodes.findIndex(n => String(n.id) === String(oid));
+                if (nix !== -1) kgData.nodes[nix].name = inp.value.trim();
+            });
+
+            // 标签
+            const tagsStr = document.getElementById('editTags').value;
+            const tags = tagsStr.split(/[,，]/).map(t => t.trim()).filter(t => t.length > 0);
+            kgData.nodes[idx].tags = tags;
+
+            // 注册新标签进 tagsConfig
+            tags.forEach(t => {
+                if (!tagsConfig[t]) {
+                    tagsConfig[t] = { color: kgData.nodes[idx].color, radius: newRadius };
+                }
+            });
+
+            // 编辑保存：半径以表单为准，颜色与封面保持上文已写入的值，不由 tagsConfig 覆盖节点外观
+
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+
+            showNodeDetails(kgData.nodes[idx]);
+            closeEditNodeModal();
+        }
+
+        function applyTagConfigsToNode(idx) {
+            const node = kgData.nodes[idx];
+            if (!node.tags || node.tags.length === 0) return;
+
+            // 优先采用最后一个已配置的标签
+            for (let i = node.tags.length - 1; i >= 0; i--) {
+                const cfg = tagsConfig[node.tags[i]];
+                if (cfg) {
+                    node.color = cfg.color;
+                    node.r = cfg.radius;
+                    break;
+                }
+            }
+        }
+
+        // ==================== Apply tag from sidebar click ====================
+        function applyTagToSelection(tagName) {
+            if (selectedNodes.length === 1) {
+                const node = selectedNodes[0];
+                const idx = kgData.nodes.findIndex(n => n.id === node.id);
+                if (idx !== -1) {
+                    if (!kgData.nodes[idx].tags) kgData.nodes[idx].tags = [];
+                    if (!kgData.nodes[idx].tags.includes(tagName)) {
+                        kgData.nodes[idx].tags.push(tagName);
+                    }
+                    // 应用标签配置
+                    applyTagConfigsToNode(idx);
+                    kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+                    persistKgData();
+                    showNodeDetails(kgData.nodes[idx]);
+                }
+            }
+        }
+
+        function closeEditNodeModal() {
+            const modal = document.getElementById('editNodeModal');
+            if (modal) modal.classList.remove('show');
+            editTargetNode = null;
+            editSelectedCover = '';
+            editUploadedCover = '';
+        }
+   
+
+        // ==================== Edit Link Modal ====================
+        let editTargetLink = null;
+
+        function openEditLinkModal() {
+            if (isReduced) { alert('归约状态下不可编辑关联，请先展开图谱'); return; }
+            if (currentMode !== 'edit') {
+                alert('请在编辑模式下编辑关联');
+                return;
+            }
+
+            const link = selectedLinks.length === 1 ? selectedLinks[0] : null;
+            if (!link) {
+                alert('请先选择一个关联进行编辑');
+                return;
+            }
+
+            editTargetLink = link;
+
+            const sourceNode = kgData.nodes.find(n => n.id === (typeof link.source === 'object' ? link.source.id : link.source));
+            const targetNode = kgData.nodes.find(n => n.id === (typeof link.target === 'object' ? link.target.id : link.target));
+            const sourceName = sourceNode ? sourceNode.name : '?';
+            const targetName = targetNode ? targetNode.name : '?';
+
+            document.getElementById('editLinkModalTitle').textContent = `编辑关联: ${sourceName} → ${targetName}`;
+            document.getElementById('editLinkType').value = link.type || '';
+
+            // Build properties block
+            buildEditLinkProperties(link.properties || {});
+
+            document.getElementById('editLinkModal').classList.add('show');
+        }
+
+        function buildEditLinkProperties(properties) {
+            const block = document.getElementById('editLinkPropertiesBlock');
+            const entries = Object.entries(properties);
+            if (entries.length === 0) {
+                block.innerHTML = '<span style="color:#888;font-size:0.88rem;">暂无属性</span>';
+            } else {
+                block.innerHTML = entries.map(([key, value], index) =>
+                    '<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">' +
+                    '<input type="text" class="edit-link-prop-key" value="' + key.replace(/"/g, '&quot;') + '" placeholder="属性名" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:4px;">' +
+                    '<input type="text" class="edit-link-prop-value" value="' + String(value).replace(/"/g, '&quot;') + '" placeholder="属性值" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:4px;">' +
+                    '<button type="button" onclick="removeLinkProperty(this)" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;background:#f9f9f9;cursor:pointer;">🗑️</button>' +
+                    '</div>'
+                ).join('');
+            }
+        }
+
+        function addLinkProperty() {
+            const block = document.getElementById('editLinkPropertiesBlock');
+            const newProp = '<div style="margin-bottom:10px;display:flex;gap:8px;align-items:center;">' +
+                '<input type="text" class="edit-link-prop-key" placeholder="属性名" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:4px;">' +
+                '<input type="text" class="edit-link-prop-value" placeholder="属性值" style="flex:1;padding:6px;border:1px solid #ddd;border-radius:4px;">' +
+                '<button type="button" onclick="removeLinkProperty(this)" style="padding:6px 10px;border:1px solid #ddd;border-radius:4px;background:#f9f9f9;cursor:pointer;">🗑️</button>' +
+                '</div>';
+            if (block.innerHTML.includes('暂无属性')) {
+                block.innerHTML = newProp;
+            } else {
+                block.innerHTML += newProp;
+            }
+        }
+
+        function removeLinkProperty(btn) {
+            btn.parentElement.remove();
+            const block = document.getElementById('editLinkPropertiesBlock');
+            if (block.children.length === 0) {
+                block.innerHTML = '<span style="color:#888;font-size:0.88rem;">暂无属性</span>';
+            }
+        }
+
+        function saveEditLink() {
+            if (!editTargetLink) return;
+
+            const linkIdx = kgData.links.findIndex(l => l.id === editTargetLink.id);
+            if (linkIdx === -1) return;
+
+            // Update type
+            const newType = document.getElementById('editLinkType').value.trim();
+            kgData.links[linkIdx].type = newType || 'RELATES_TO';
+
+            // Update properties
+            const newProperties = {};
+            const keyInputs = document.querySelectorAll('#editLinkPropertiesBlock .edit-link-prop-key');
+            const valueInputs = document.querySelectorAll('#editLinkPropertiesBlock .edit-link-prop-value');
+            keyInputs.forEach((keyInput, index) => {
+                const key = keyInput.value.trim();
+                const value = valueInputs[index].value.trim();
+                if (key) {
+                    newProperties[key] = value;
+                }
+            });
+            kgData.links[linkIdx].properties = newProperties;
+
+            // Update the graph
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+
+            // Update sidebar if open
+            showLinkDetails(kgData.links[linkIdx]);
+
+            closeEditLinkModal();
+        }
+
+        function closeEditLinkModal() {
+            document.getElementById('editLinkModal').classList.remove('show');
+            editTargetLink = null;
+        }
+
+        // ==================== Tag Manager ====================
+        function openTagManager() {
+            if (isReduced) { alert('归约状态下不可管理标签，请先展开图谱'); return; }
+            renderTagManager();
+            document.getElementById('tagManagerModal').classList.add('show');
+        }
+
+        function closeTagManager() {
+            document.getElementById('tagManagerModal').classList.remove('show');
+        }
+
+        function renderTagManager() {
+            const tagList = document.getElementById('tagList');
+            const tagConfigArea = document.getElementById('tagConfigArea');
+
+            // Collect all tags from nodes
+            const allTags = new Set();
+            kgData.nodes.forEach(n => {
+                if (n.tags) n.tags.forEach(t => allTags.add(t));
+            });
+            // Also from tagsConfig
+            Object.keys(tagsConfig).forEach(t => allTags.add(t));
+
+            if (allTags.size === 0) {
+                tagList.innerHTML = '<span style="color:#999;font-size:0.85rem;">暂无标签</span>';
+                tagConfigArea.innerHTML = '';
+                return;
+            }
+
+            tagList.innerHTML = Array.from(allTags).map(t => {
+                const cfg = tagsConfig[t];
+                const bgColor = cfg ? cfg.color + '22' : '#e3f2fd';
+                const textColor = cfg ? cfg.color : '#1976d2';
+                const nodeCount = kgData.nodes.filter(n => n.tags && n.tags.includes(t)).length;
+                return `<span class="tag-chip" style="background:${bgColor};color:${textColor};">
+                    <span class="tag-dot" style="background:${cfg ? cfg.color : '#1976d2'};"></span>
+                    ${t} (${nodeCount})
+                    <span class="tag-remove" onclick="removeTag('${t.replace(/'/g, "\\'")}')">×</span>
+                </span>`;
+            }).join('');
+
+            // Render config panels for each tag
+            tagConfigArea.innerHTML = Array.from(allTags).map(t => {
+                const cfg = tagsConfig[t] || { color: '#58a6ff', radius: 30 };
+                const nodeCount = kgData.nodes.filter(n => n.tags && n.tags.includes(t)).length;
+                return `
+                <div class="tag-config-panel" style="margin-bottom:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <strong style="color:${cfg.color};">🏷️ ${t}</strong>
+                        <span style="font-size:0.8rem;color:#999;">${nodeCount} 个节点</span>
+                    </div>
+                    <div class="form-group">
+                        <label>统一颜色</label>
+                        <input type="color" value="${cfg.color}" onchange="updateTagConfig('${t.replace(/'/g, "\\'")}', 'color', this.value)">
+                    </div>
+                    <div class="form-group">
+                        <label>统一半径</label>
+                        <div class="range-row">
+                            <input type="range" min="10" max="80" value="${cfg.radius}" oninput="this.nextElementSibling.textContent=this.value; updateTagConfig('${t.replace(/'/g, "\\'")}', 'radius', parseInt(this.value))">
+                            <span class="range-value">${cfg.radius}</span>
+                        </div>
+                    </div>
+                    <button onclick="applyTagConfigToNodes('${t.replace(/'/g, "\\'")}')" style="width:100%;padding:8px;border:none;border-radius:6px;background:${cfg.color};color:#fff;cursor:pointer;font-size:0.85rem;margin-top:4px;">应用到所有 ${t} 标签节点</button>
+                </div>`;
+            }).join('');
+        }
+
+        function addNewTag() {
+            const input = document.getElementById('newTagName');
+            const name = input.value.trim();
+            if (!name) return;
+
+            if (!tagsConfig[name]) {
+                tagsConfig[name] = {
+                    color: BAR_COLORS[Object.keys(tagsConfig).length % BAR_COLORS.length],
+                    radius: 30
+                };
+            }
+
+            persistKgData();
+            input.value = '';
+            renderTagManager();
+        }
+
+        function removeTag(tagName) {
+            // Remove from tagsConfig
+            delete tagsConfig[tagName];
+
+            // Remove from all nodes
+            kgData.nodes.forEach(n => {
+                if (n.tags) {
+                    n.tags = n.tags.filter(t => t !== tagName);
+                }
+            });
+
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+            renderTagManager();
+        }
+
+        function updateTagConfig(tagName, key, value) {
+            if (!tagsConfig[tagName]) {
+                tagsConfig[tagName] = { color: '#58a6ff', radius: 30 };
+            }
+            tagsConfig[tagName][key] = value;
+            persistKgData();
+        }
+
+        function applyTagConfigToNodes(tagName) {
+            const cfg = tagsConfig[tagName];
+            if (!cfg) return;
+
+            let count = 0;
+            kgData.nodes.forEach(n => {
+                if (n.tags && n.tags.includes(tagName)) {
+                    n.color = cfg.color;
+                    n.r = cfg.radius;
+                    count++;
+                }
+            });
+
+            kg.setOption({ nodes: kgData.nodes, links: kgData.links });
+            persistKgData();
+
+            // Refresh sidebar if a tagged node is selected
+            if (selectedNodes.length === 1 && selectedNodes[0].tags && selectedNodes[0].tags.includes(tagName)) {
+                showNodeDetails(selectedNodes[0]);
+            }
+
+            alert(`已将标签 "${tagName}" 的配置应用到 ${count} 个节点`);
+        }
+
+        // ==================== Fullscreen：逐级展开演示 ====================
+        function clearFullscreenGradualDemo() {
+            if (fullscreenGradualTimer) {
+                clearInterval(fullscreenGradualTimer);
+                fullscreenGradualTimer = null;
+            }
+        }
+
+        /** 归约态全屏时定时「再展开一步」，展示逐级恢复效果 */
+        function maybeStartFullscreenGradualExpand() {
+            if (fullscreenGradualTimer) return;
+            if (typeof isReduced === 'undefined' || !isReduced) return;
+            if (!window.kg || typeof window.kg.expandOneGradualStep !== 'function') return;
+            fullscreenGradualTimer = setInterval(function () {
+                try {
+                    const ok = window.kg.expandOneGradualStep();
+                    if (!ok) {
+                        clearFullscreenGradualDemo();
+                        setTimeout(resetSvgBounds, 120);
+                    }
+                } catch (e) {
+                    console.error(e);
+                    clearFullscreenGradualDemo();
+                }
+            }, FULLSCREEN_GRADUAL_STEP_MS);
+        }
+
+        // ==================== Fullscreen ====================
+        function toggleFullscreen() {
+            const kgEl = document.getElementById('kg');
+            const exitBtn = document.getElementById('fullscreenExitBtn');
+
+            if (!isFullscreen) {
+                // Enter fullscreen（归约态下在全屏画布上定时逐级展开，不一次性全部展开）
+                if (kgEl.requestFullscreen) {
+                    kgEl.requestFullscreen();
+                } else if (kgEl.webkitRequestFullscreen) {
+                    kgEl.webkitRequestFullscreen();
+                } else if (kgEl.msRequestFullscreen) {
+                    kgEl.msRequestFullscreen();
+                } else {
+                    // Fallback: CSS fullscreen
+                    kgEl.classList.add('is-fullscreen');
+                    exitBtn.style.display = 'block';
+                    setTimeout(maybeStartFullscreenGradualExpand, 800);
+                }
+                isFullscreen = true;
+            } else {
+                // Exit fullscreen
+                clearFullscreenGradualDemo();
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    document.msExitFullscreen();
+                } else {
+                    kgEl.classList.remove('is-fullscreen');
+                    exitBtn.style.display = 'none';
+                }
+                exitReadOnlyMode();
+                persistKgData();
+                isFullscreen = false;
+            }
+            // Reset SVG bounds after a brief delay to let layout settle
+            setTimeout(resetSvgBounds, 150);
+        }
+
+        // Listen for fullscreen change (e.g. user presses Esc)
+        document.addEventListener('fullscreenchange', function() {
+            const exitBtn = document.getElementById('fullscreenExitBtn');
+            const kgEl = document.getElementById('kg');
+            if (!document.fullscreenElement) {
+                isFullscreen = false;
+                exitBtn.style.display = 'none';
+                clearFullscreenGradualDemo();
+            } else {
+                exitBtn.style.display = 'block';
+                isFullscreen = true;
+                if (kgEl && document.fullscreenElement === kgEl) {
+                    setTimeout(maybeStartFullscreenGradualExpand, 350);
+                }
+            }
+            // SVG needs to match the new container size
+            setTimeout(resetSvgBounds, 100);
+        });
+
+        // Listen for window resize - safe reload with multi-link check
+        let _resizeTimer = null;
+        window.addEventListener('resize', function() {
+            clearTimeout(_resizeTimer);
+            _resizeTimer = setTimeout(function() {
+                safeReload('窗口大小变化');
+            }, 200);
+        });
+    </script>
+
+    <!-- ========== 投稿区域 ========== -->
+    <div class="contribution-section" style="margin-top: 40px; background: white; border-radius: 16px; padding: 30px; box-shadow: 0 20px 60px rgba(0,0,0,0.15);">
+        <h2 class="card-title" style="display: flex; align-items: center; gap: 10px;">
+            📤 知识图谱投稿
+            <span style="font-size: 0.7em; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; padding: 4px 12px; border-radius: 12px;">贡献您的知识</span>
+        </h2>
+        <p style="color: #666; margin-bottom: 20px; font-size: 0.95rem;">
+            您可以将自己创建的知识图谱导出为 JSON 文件并投稿分享。投稿的图谱将会被管理员审核后展示给所有用户。
+        </p>
+        
+        <div class="contribution-upload-area" style="border: 2px dashed #d0d0d0; border-radius: 12px; padding: 40px; text-align: center; transition: all 0.3s ease; cursor: pointer; background: #fafafa;">
+            <input type="file" id="contributionFileInput" accept=".json" style="display: none;" onchange="handleContributionUpload(event)">
+            <div style="font-size: 3rem; margin-bottom: 15px;">📁</div>
+            <div style="font-size: 1.1rem; color: #333; margin-bottom: 8px;">点击或拖拽 JSON 文件到此处</div>
+            <div style="font-size: 0.85rem; color: #999;">支持 .json 格式的知识图谱文件，最大 10MB</div>
+        </div>
+        
+        <div id="contributionPreview" style="display: none; margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+            <h4 style="color: #333; margin-bottom: 15px;">📄 待上传文件</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 15px; background: white; border-radius: 8px; border: 1px solid #e0e0e0;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.5rem;">📊</span>
+                    <div>
+                        <div id="contributionFileName" style="font-weight: 600; color: #333;">filename.json</div>
+                        <div id="contributionFileSize" style="font-size: 0.85rem; color: #999;">0 KB</div>
+                    </div>
+                </div>
+                <button onclick="clearContributionFile()" style="background: #f0f0f0; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: background 0.2s;">清除</button>
+            </div>
+            <div style="margin-top: 15px;">
+                <label style="display: block; font-size: 0.9rem; color: #555; margin-bottom: 6px;">投稿说明（可选）</label>
+                <textarea id="contributionDescription" placeholder="简要描述您投稿的知识图谱内容..." style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 0.95rem; resize: vertical; min-height: 80px;"></textarea>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px;">
+                <button id="submitContributionBtn" onclick="submitContribution()" style="flex: 1; padding: 14px; border: none; border-radius: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 1rem; font-weight: 600; cursor: pointer; transition: opacity 0.2s;">
+                    📤 提交投稿
+                </button>
+            </div>
+        </div>
+        
+        <div id="contributionStatus" style="display: none; margin-top: 15px; padding: 15px; border-radius: 8px; font-size: 0.95rem;"></div>
+    </div>
+
+    <style>
+        .contribution-upload-area:hover {
+            border-color: #764ba2;
+            background: #f5f0ff;
+        }
+        
+        .contribution-upload-area.dragover {
+            border-color: #764ba2;
+            background: #f0e6ff;
+            transform: scale(1.01);
+        }
+        
+        #submitContributionBtn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .contribution-toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .contribution-toast.success { background: #28a745; }
+        .contribution-toast.error { background: #dc3545; }
+        .contribution-toast.loading { background: #17a2b8; }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+
+    <script>
+        let contributionFile = null;
+        
+        // 初始化拖拽上传
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.querySelector('.contribution-upload-area');
+            
+            uploadArea.addEventListener('click', function() {
+                document.getElementById('contributionFileInput').click();
+            });
+            
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleContributionFile(files[0]);
+                }
+            });
+        });
+        
+        function handleContributionUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                handleContributionFile(file);
+            }
+        }
+        
+        function handleContributionFile(file) {
+            // 验证文件类型
+            if (!file.name.endsWith('.json')) {
+                showContributionToast('请选择 JSON 格式的文件', 'error');
+                return;
+            }
+            
+            // 验证文件大小
+            if (file.size > 10 * 1024 * 1024) {
+                showContributionToast('文件大小不能超过 10MB', 'error');
+                return;
+            }
+            
+            contributionFile = file;
+            
+            // 显示预览
+            document.getElementById('contributionFileName').textContent = file.name;
+            document.getElementById('contributionFileSize').textContent = formatFileSize(file.size);
+            document.getElementById('contributionPreview').style.display = 'block';
+            document.getElementById('contributionStatus').style.display = 'none';
+            
+            // 验证 JSON 格式
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    JSON.parse(e.target.result);
+                } catch (err) {
+                    showContributionToast('文件不是有效的 JSON 格式', 'error');
+                    clearContributionFile();
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function clearContributionFile() {
+            contributionFile = null;
+            document.getElementById('contributionFileInput').value = '';
+            document.getElementById('contributionPreview').style.display = 'none';
+            document.getElementById('contributionStatus').style.display = 'none';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+        
+        function showContributionToast(message, type) {
+            const existing = document.querySelector('.contribution-toast');
+            if (existing) existing.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = `contribution-toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            
+            if (type !== 'loading') {
+                setTimeout(() => toast.remove(), 3000);
+            }
+            
+            return toast;
+        }
+        
+        async function submitContribution() {
+            if (!contributionFile) {
+                showContributionToast('请先选择文件', 'error');
+                return;
+            }
+            
+            const btn = document.getElementById('submitContributionBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ 上传中...';
+            
+            const toast = showContributionToast('正在上传投稿...', 'loading');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', contributionFile);
+                
+                // 添加投稿说明
+                const description = document.getElementById('contributionDescription').value.trim();
+                if (description) {
+                    formData.append('description', description);
+                }
+                
+                const response = await fetch('/api/picupload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                toast.remove();
+                
+                if (result.success) {
+                    showContributionToast('🎉 投稿成功！感谢您的贡献', 'success');
+                    clearContributionFile();
+                    
+                    // 显示成功状态
+                    const status = document.getElementById('contributionStatus');
+                    status.style.display = 'block';
+                    status.style.background = '#d4edda';
+                    status.style.color = '#155724';
+                    status.innerHTML = `✅ 投稿成功！文件已上传为 <strong>${result.filename}</strong>`;
+                } else {
+                    showContributionToast('上传失败: ' + result.error, 'error');
+                }
+            } catch (error) {
+                toast.remove();
+                showContributionToast('网络错误，请稍后重试', 'error');
+                console.error('上传失败:', error);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📤 提交投稿';
+            }
+        }
+    </script>
+</body>
+</html>
